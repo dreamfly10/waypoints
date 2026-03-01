@@ -1,12 +1,11 @@
 import { useProfile } from "@/hooks/use-profile";
 import { useAlerts } from "@/hooks/use-alerts";
-import { useCreateCommunityPost } from "@/hooks/use-community";
+import { useCommunityPosts, useCreateCommunityPost } from "@/hooks/use-community";
 import { AppLayout } from "@/components/layout/app-layout";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
+import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, CheckCircle2, Info, ChevronRight, Activity, Award, Share2 } from "lucide-react";
+import { AlertCircle, CheckCircle2, Info, ChevronRight, Share2, ArrowUpRight, Calendar, Trophy } from "lucide-react";
 import { Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -14,6 +13,7 @@ import { format } from "date-fns";
 export default function Home() {
   const { data: profile, isLoading: profileLoading } = useProfile();
   const { data: alerts, isLoading: alertsLoading } = useAlerts();
+  const { data: posts, isLoading: postsLoading } = useCommunityPosts();
   const { mutate: shareMilestone, isPending: isSharing } = useCreateCommunityPost();
   const { toast } = useToast();
 
@@ -27,7 +27,7 @@ export default function Home() {
       milestoneCard: {
         title: "Readiness Milestone",
         score: profile.readinessScore,
-        delta: 10, // Mock delta
+        delta: 3,
         date: format(new Date(), 'MMM d, yyyy')
       },
       date: format(new Date(), 'MMM d, yyyy')
@@ -41,148 +41,186 @@ export default function Home() {
     });
   };
 
+  const getTimeGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good morning";
+    if (hour < 18) return "Good afternoon";
+    return "Good evening";
+  };
+
+  const actionItems = alerts?.filter(a => a.severity === 'high' || a.severity === 'medium').slice(0, 3) || [];
+  const deadlines = alerts?.filter(a => a.dueDate || a.relatedVaultType === 'pft').slice(0, 3) || [];
+  const recentMilestones = posts?.filter(p => p.type === 'milestone').slice(0, 2) || [];
+
   return (
     <AppLayout>
-      <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-8">
         
-        {/* Header Section */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        {/* Greeting Header */}
+        <div className="flex justify-between items-start pt-2">
           <div>
-            <h1 className="text-3xl md:text-4xl font-bold font-display text-foreground tracking-tight">
-              Dashboard
+            <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">
+              {getTimeGreeting()}, {profile?.rank || "SGT"}.
             </h1>
-            <p className="text-muted-foreground mt-2 text-lg">
-              Welcome back. Here is your current career snapshot.
+            <p className="text-slate-500 dark:text-slate-400 font-bold text-sm mt-0.5 uppercase tracking-wider">
+              Here's your career status.
             </p>
           </div>
           {profile && profile.readinessScore >= 70 && (
             <Button 
+              size="icon"
               onClick={handleShareMilestone}
               disabled={isSharing}
-              className="bg-accent text-accent-foreground hover:bg-accent/90"
+              className="rounded-full bg-emerald-500 hover:bg-emerald-600 shadow-lg shadow-emerald-500/20"
             >
-              <Share2 className="w-4 h-4 mr-2" />
-              Share Milestone
+              <Share2 className="w-4 h-4 text-white" />
             </Button>
           )}
         </div>
 
-        {/* Top Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          
-          {/* Readiness Score Card */}
-          <Card className="card-ios shadow-emerald-500/5 lg:col-span-2 relative overflow-hidden group">
-            <div className="absolute right-0 top-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none group-hover:bg-emerald-500/10 transition-colors duration-500" />
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xl font-bold flex items-center gap-2 text-slate-900 dark:text-white">
-                <Activity className="w-5 h-5 text-emerald-500" />
-                Overall Readiness
-              </CardTitle>
-              <CardDescription className="text-slate-500 dark:text-slate-400">Composite score based on your vault and physical fitness.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {profileLoading ? (
-                <Skeleton className="h-12 w-full mt-4 rounded-2xl" />
-              ) : (
-                <div className="mt-4">
-                  <div className="flex justify-between items-end mb-3">
-                    <span className="text-5xl font-black tracking-tighter text-slate-900 dark:text-white">
-                      {profile?.readinessScore}<span className="text-xl text-slate-400 dark:text-slate-500 font-bold">/100</span>
-                    </span>
-                    <span className="text-xs font-black uppercase tracking-widest text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded-full">Optimal</span>
+        {/* Readiness Circular Card */}
+        <Card className="card-ios bg-slate-900 dark:bg-emerald-950/20 text-white overflow-hidden relative border-none shadow-xl shadow-emerald-500/10">
+          <div className="absolute right-0 top-0 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none" />
+          <CardContent className="p-8 flex items-center justify-between gap-6">
+            <div className="relative flex items-center justify-center shrink-0">
+              <svg className="w-32 h-32 transform -rotate-90">
+                <circle
+                  cx="64"
+                  cy="64"
+                  r="58"
+                  stroke="currentColor"
+                  strokeWidth="8"
+                  fill="transparent"
+                  className="text-white/10"
+                />
+                <circle
+                  cx="64"
+                  cy="64"
+                  r="58"
+                  stroke="currentColor"
+                  strokeWidth="8"
+                  fill="transparent"
+                  strokeDasharray={364}
+                  strokeDashoffset={364 - (364 * (profile?.readinessScore || 0)) / 100}
+                  strokeLinecap="round"
+                  className="text-emerald-400 transition-all duration-1000 ease-out"
+                />
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="text-3xl font-black">{profile?.readinessScore || 0}</span>
+                <span className="text-[10px] font-black uppercase tracking-widest text-white/50">Score</span>
+              </div>
+            </div>
+            
+            <div className="flex-1 space-y-4">
+              <div>
+                <h3 className="text-xl font-bold leading-tight">Overall Readiness</h3>
+                <div className="flex items-center gap-1.5 mt-1">
+                  <div className="flex items-center text-emerald-400 text-xs font-black">
+                    <ArrowUpRight className="w-3 h-3 mr-0.5" />
+                    +3 THIS WEEK
                   </div>
-                  <Progress value={profile?.readinessScore || 0} className="h-3 bg-slate-100 dark:bg-slate-800" indicatorClassName="bg-emerald-500 rounded-full" />
                 </div>
-              )}
-            </CardContent>
-          </Card>
+              </div>
+              <Link href="/readiness">
+                <Button variant="outline" className="w-full h-10 rounded-xl bg-white/10 border-white/10 hover:bg-white/20 text-white text-[10px] font-black uppercase tracking-widest transition-all">
+                  View Details
+                </Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
 
-          {/* Snapshot Card */}
-          <Card className="card-ios shadow-slate-200/50 dark:shadow-none">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-xl font-bold flex items-center gap-2 text-slate-900 dark:text-white">
-                <Award className="w-5 h-5 text-slate-400" />
-                Profile Snapshot
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {profileLoading ? (
-                <div className="space-y-4">
-                  <Skeleton className="h-4 w-full rounded-full" />
-                  <Skeleton className="h-4 w-3/4 rounded-full" />
-                  <Skeleton className="h-4 w-full rounded-full" />
-                </div>
-              ) : (
-                <div className="space-y-4 font-bold text-sm">
-                  <div className="flex justify-between border-b border-slate-50 dark:border-slate-800 pb-2">
-                    <span className="text-slate-400 dark:text-slate-500">Branch</span>
-                    <span className="text-slate-900 dark:text-white">{profile?.branch}</span>
-                  </div>
-                  <div className="flex justify-between border-b border-slate-50 dark:border-slate-800 pb-2">
-                    <span className="text-slate-400 dark:text-slate-500">Rank</span>
-                    <span className="text-slate-900 dark:text-white">{profile?.rank}</span>
-                  </div>
-                  <div className="flex justify-between border-b border-slate-50 dark:border-slate-800 pb-2">
-                    <span className="text-slate-400 dark:text-slate-500">MOS</span>
-                    <span className="text-slate-900 dark:text-white">{profile?.mos}</span>
-                  </div>
-                  <div className="flex justify-between pb-1">
-                    <span className="text-slate-400 dark:text-slate-500">Latest PFT</span>
-                    <span className="text-emerald-500 font-black">{profile?.pftScore}</span>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Action Items / Alerts */}
+        {/* Action Items Section */}
         <div className="space-y-4">
-          <div className="flex items-center justify-between px-2">
-            <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Action Items</h2>
-            <Link href="/readiness" className="text-xs font-black uppercase tracking-widest text-emerald-500 hover:text-emerald-600 transition-colors">
-              See All
+          <div className="flex items-center justify-between px-1">
+            <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">Action Items</h2>
+            <Link href="/readiness" className="text-[10px] font-black uppercase tracking-widest text-emerald-500">
+              Manage
             </Link>
           </div>
           
           <div className="grid gap-3">
             {alertsLoading ? (
               Array(3).fill(0).map((_, i) => <Skeleton key={i} className="h-20 w-full rounded-3xl" />)
-            ) : alerts?.length === 0 ? (
-              <div className="p-10 text-center bg-slate-50 dark:bg-slate-900 rounded-[32px] border border-dashed border-slate-200 dark:border-slate-800 text-slate-400">
-                <CheckCircle2 className="w-10 h-10 mx-auto mb-4 opacity-20" />
-                <p className="font-bold text-sm">Tactical update complete. All systems green.</p>
+            ) : actionItems.length === 0 ? (
+              <div className="p-8 text-center bg-slate-50 dark:bg-slate-900/50 rounded-[32px] border border-dashed border-slate-200 dark:border-slate-800 text-slate-400">
+                <CheckCircle2 className="w-8 h-8 mx-auto mb-3 opacity-20" />
+                <p className="font-bold text-xs">All clear on your end.</p>
               </div>
             ) : (
-              alerts?.map((alert) => (
-                <div 
-                  key={alert.id}
-                  className={`
-                    p-5 rounded-[24px] flex items-center gap-4 transition-all hover:scale-[1.02] active:scale-95
-                    ${alert.severity === 'high' ? 'bg-rose-50 dark:bg-rose-500/10' : 
-                      alert.severity === 'medium' ? 'bg-amber-50 dark:bg-amber-500/10' : 
-                      'bg-slate-50 dark:bg-slate-900/50'}
-                  `}
-                >
-                  <div className="shrink-0">
-                    {alert.severity === 'high' && <div className="p-2 bg-rose-500 rounded-xl shadow-lg shadow-rose-500/20"><AlertCircle className="w-5 h-5 text-white" /></div>}
-                    {alert.severity === 'medium' && <div className="p-2 bg-amber-500 rounded-xl shadow-lg shadow-amber-500/20"><Info className="w-5 h-5 text-white" /></div>}
-                    {alert.severity === 'low' && <div className="p-2 bg-slate-400 rounded-xl shadow-lg shadow-slate-400/20"><CheckCircle2 className="w-5 h-5 text-white" /></div>}
-                  </div>
+              actionItems.map((alert) => (
+                <div key={alert.id} className="p-4 bg-white dark:bg-slate-900 rounded-[24px] border border-slate-100 dark:border-slate-800 flex items-center gap-4 shadow-sm">
+                  <div className={`w-2 h-10 rounded-full shrink-0 ${alert.severity === 'high' ? 'bg-rose-500' : 'bg-amber-500'}`} />
                   <div className="flex-1 min-w-0">
-                    <p className="font-bold text-sm text-slate-900 dark:text-slate-100">
-                      {alert.title}
-                    </p>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-1">
-                      {alert.message}
-                    </p>
+                    <p className="font-bold text-sm text-slate-900 dark:text-slate-100 truncate">{alert.title}</p>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Tactical requirement</p>
                   </div>
-                  {!alert.isRead && (
-                    <div className="w-2 h-2 rounded-full bg-emerald-500 shrink-0 shadow-sm shadow-emerald-500/50" />
-                  )}
+                  <Button size="sm" variant="secondary" className="h-8 rounded-lg text-[10px] font-black uppercase px-3 tracking-widest">
+                    {alert.actionType === 'upload' ? 'Upload' : alert.actionType === 'renew' ? 'Renew' : 'Resolve'}
+                  </Button>
                 </div>
               ))
             )}
+          </div>
+        </div>
+
+        {/* Upcoming Deadlines */}
+        <Card className="card-ios border-none shadow-sm bg-amber-500/5 dark:bg-amber-500/10">
+          <CardContent className="p-6">
+            <h2 className="text-lg font-bold flex items-center gap-2 mb-4 text-slate-900 dark:text-white">
+              <Calendar className="w-5 h-5 text-amber-500" />
+              Upcoming Deadlines
+            </h2>
+            <div className="space-y-3">
+              {deadlines.length > 0 ? deadlines.map(d => (
+                <div key={d.id} className="flex items-center justify-between text-sm">
+                  <span className="text-slate-600 dark:text-slate-400 font-bold">{d.title}</span>
+                  <span className="text-amber-600 dark:text-amber-400 font-black font-mono text-xs">
+                    {d.dueDate ? format(new Date(d.dueDate), 'MMM d') : d.relatedVaultType === 'pft' ? 'Missing' : 'Pending'}
+                  </span>
+                </div>
+              )) : (
+                <p className="text-xs text-slate-400 font-medium">No immediate deadlines.</p>
+              )}
+              <div className="flex items-center justify-between text-sm opacity-60">
+                <span className="text-slate-600 dark:text-slate-400 font-bold">Board Eligibility</span>
+                <span className="text-emerald-600 dark:text-emerald-400 font-black font-mono text-xs">OCT 2026</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Recent Milestones */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between px-1">
+            <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">Recent Milestones</h2>
+            <Link href="/community" className="text-[10px] font-black uppercase tracking-widest text-emerald-500">
+              Community
+            </Link>
+          </div>
+          
+          <div className="space-y-3">
+            {postsLoading ? (
+              Array(2).fill(0).map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-3xl" />)
+            ) : recentMilestones.length === 0 ? (
+              <p className="text-xs text-slate-400 font-medium px-1 text-center py-4">No recent community milestones.</p>
+            ) : recentMilestones.map((post) => (
+              <div key={post.id} className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-[24px] border border-slate-100 dark:border-slate-800 flex items-start gap-4">
+                <div className="p-2 bg-white dark:bg-slate-800 rounded-xl shadow-sm">
+                  <Trophy className="w-5 h-5 text-amber-500" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-black uppercase text-emerald-500">{post.author}</span>
+                    <span className="text-[10px] font-medium text-slate-400 uppercase tracking-widest">{post.date}</span>
+                  </div>
+                  <p className="text-sm font-bold text-slate-900 dark:text-slate-100 mt-1 line-clamp-2 leading-snug">
+                    {post.content}
+                  </p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 

@@ -56,8 +56,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
           {navItems.map((item) => {
             const isActive = location === item.url;
             return (
-              <Link key={item.title} href={item.url}>
-                <a className="flex flex-col items-center gap-1.5 transition-all duration-300 group">
+              <Link key={item.title} href={item.url} className="flex flex-col items-center gap-1.5 transition-all duration-300 group">
                   <div className={`p-1.5 rounded-xl transition-all duration-300 ${isActive ? 'text-emerald-500 scale-110' : 'text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-400'}`}>
                     <item.icon className={`w-6 h-6 ${isActive ? 'fill-emerald-500/10 stroke-[2.5px]' : 'stroke-[1.5px]'}`} />
                   </div>
@@ -67,7 +66,6 @@ export function AppLayout({ children }: { children: ReactNode }) {
                   {isActive && (
                     <div className="absolute -top-1 w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
                   )}
-                </a>
               </Link>
             );
           })}
