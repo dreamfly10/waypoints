@@ -1,28 +1,70 @@
 import { useProfile } from "@/hooks/use-profile";
 import { useAlerts } from "@/hooks/use-alerts";
+import { useCreateCommunityPost } from "@/hooks/use-community";
 import { AppLayout } from "@/components/layout/app-layout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertCircle, CheckCircle2, Info, ChevronRight, Activity, Award } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { AlertCircle, CheckCircle2, Info, ChevronRight, Activity, Award, Share2 } from "lucide-react";
 import { Link } from "wouter";
+import { useToast } from "@/hooks/use-toast";
+import { format } from "date-fns";
 
 export default function Home() {
   const { data: profile, isLoading: profileLoading } = useProfile();
   const { data: alerts, isLoading: alertsLoading } = useAlerts();
+  const { mutate: shareMilestone, isPending: isSharing } = useCreateCommunityPost();
+  const { toast } = useToast();
+
+  const handleShareMilestone = () => {
+    if (!profile) return;
+    
+    shareMilestone({
+      author: "Current User",
+      content: `I've reached a readiness score of ${profile.readinessScore}! My career is on track.`,
+      type: "milestone",
+      milestoneCard: {
+        title: "Readiness Milestone",
+        score: profile.readinessScore,
+        delta: 10, // Mock delta
+        date: format(new Date(), 'MMM d, yyyy')
+      },
+      date: format(new Date(), 'MMM d, yyyy')
+    }, {
+      onSuccess: () => {
+        toast({
+          title: "Milestone Shared",
+          description: "Your achievement has been posted to the community feed.",
+        });
+      }
+    });
+  };
 
   return (
     <AppLayout>
       <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
         
         {/* Header Section */}
-        <div>
-          <h1 className="text-3xl md:text-4xl font-bold font-display text-foreground tracking-tight">
-            Dashboard
-          </h1>
-          <p className="text-muted-foreground mt-2 text-lg">
-            Welcome back. Here is your current career snapshot.
-          </p>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl md:text-4xl font-bold font-display text-foreground tracking-tight">
+              Dashboard
+            </h1>
+            <p className="text-muted-foreground mt-2 text-lg">
+              Welcome back. Here is your current career snapshot.
+            </p>
+          </div>
+          {profile && profile.readinessScore >= 70 && (
+            <Button 
+              onClick={handleShareMilestone}
+              disabled={isSharing}
+              className="bg-accent text-accent-foreground hover:bg-accent/90"
+            >
+              <Share2 className="w-4 h-4 mr-2" />
+              Share Milestone
+            </Button>
+          )}
         </div>
 
         {/* Top Cards Grid */}

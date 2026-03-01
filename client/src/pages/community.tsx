@@ -109,8 +109,31 @@ export default function Community() {
                     {post.content}
                   </p>
 
+                  {post.milestoneCard && (
+                    <Card className="mt-4 bg-accent/5 border-accent/20 overflow-hidden">
+                      <CardContent className="p-4 flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <div className="p-2 bg-accent/20 rounded-lg">
+                            <Award className="w-6 h-6 text-accent" />
+                          </div>
+                          <div>
+                            <p className="font-bold text-accent">{(post.milestoneCard as any).title}</p>
+                            <p className="text-xs text-muted-foreground">{(post.milestoneCard as any).date}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-2xl font-black text-accent">{(post.milestoneCard as any).score}</p>
+                          <p className="text-[10px] font-bold text-accent/60 tracking-wider uppercase">Readiness Score</p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
                   <div className="flex items-center gap-6 mt-6 pt-4 border-t border-border/40">
-                    <button className="flex items-center gap-1.5 text-muted-foreground hover:text-accent transition-colors group text-sm font-medium">
+                    <button 
+                      onClick={() => {}} // Local only mock
+                      className="flex items-center gap-1.5 text-muted-foreground hover:text-accent transition-colors group text-sm font-medium"
+                    >
                       <Heart className="w-4 h-4 group-hover:fill-accent/20" /> 
                       {post.likes > 0 ? post.likes : 'Like'}
                     </button>
