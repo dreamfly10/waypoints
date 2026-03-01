@@ -103,9 +103,9 @@ export async function registerRoutes(
       let response = "I can help with that. ";
       
       if (isAdvancedRequest) {
-        response = `As a ${profile.rank} in the ${profile.branch} (MOS ${profile.mos}), your next promotion requires focusing on key leadership billets. Given your PFT score of ${profile.pftScore}, maintaining top physical readiness is crucial. Try completing advanced NCO courses this year.`;
+        response = `As a ${profile.rank} in the ${profile.branch} (MOS ${profile.mos}), your next promotion requires focusing on key leadership billets. Given your PFT score of ${profile.pftScore}, maintaining top physical readiness is crucial. Try completing advanced NCO courses this year. Your readiness score is currently ${profile.readinessScore}%.`;
       } else if (lowerQuery.includes("readiness") || lowerQuery.includes("score")) {
-        response = `Your current readiness score is ${profile.readinessScore}%. To improve it, make sure to upload your latest medical and training evaluations to the Vault.`;
+        response = `Your current readiness score is ${profile.readinessScore}%. Your PFT score of ${profile.pftScore} contributes to this. ${profile.readinessScore >= 95 && !profile.isPro ? "You've reached the free tier cap. Go Pro to reach 100%!" : ""}`;
       } else {
         response = `Based on your profile as a ${profile.rank}, I recommend focusing on your immediate readiness requirements. Let me know if you want detailed promotion strategies!`;
       }
