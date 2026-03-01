@@ -222,7 +222,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
                                   checked={profile?.vaultLockEnabled} 
                                   onCheckedChange={(val) => {
                                     if (val && !profile?.vaultPassword) {
-                                      // Needs initial setup
+                                      setPasswordStep('create');
                                     } else {
                                       updateProfile({ vaultLockEnabled: val });
                                     }
@@ -230,8 +230,8 @@ export function AppLayout({ children }: { children: ReactNode }) {
                                 />
                               </div>
 
-                              {(!profile?.vaultPassword || passwordStep !== 'create' || valuePasswordOpen) && (
-                                <form onSubmit={handlePasswordSubmit} className="space-y-4">
+                              {(profile?.vaultLockEnabled || (!profile?.vaultPassword && passwordStep === 'create')) && (
+                                <form onSubmit={handlePasswordSubmit} className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
                                   <div className="space-y-2">
                                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">
                                       {passwordStep === 'create' ? 'Enter Numeric Password' : 'Confirm Password'}
@@ -250,6 +250,14 @@ export function AppLayout({ children }: { children: ReactNode }) {
                                     {passwordStep === 'create' ? 'Next' : 'Secure Vault'}
                                   </Button>
                                 </form>
+                              )}
+                              
+                              {!profile?.vaultLockEnabled && profile?.vaultPassword && (
+                                <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-dashed border-slate-200 dark:border-slate-800 text-center">
+                                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                    Feature Disabled
+                                  </p>
+                                </div>
                               )}
                             </div>
                           </DialogContent>
