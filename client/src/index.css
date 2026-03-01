@@ -42,27 +42,27 @@
     --input: 214 32% 91%;
     --ring: 222 47% 11%;
 
-    --radius: 0.5rem;
+    --radius: 1.25rem;
 
-    --sidebar-background: 222 47% 11%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 120 25% 35%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 222 47% 11%;
+    --sidebar-primary: 142 76% 36%; /* Brighter green for active state */
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 215 20% 18%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 215 20% 18%;
-    --sidebar-ring: 120 25% 35%;
+    --sidebar-accent: 142 76% 95%;
+    --sidebar-accent-foreground: 142 76% 36%;
+    --sidebar-border: 214 32% 91%;
+    --sidebar-ring: 142 76% 36%;
   }
 
   .dark {
     /* Tactical Minimal Dark Theme */
-    --background: 222 47% 11%;
+    --background: 222 47% 6%;
     --foreground: 210 40% 98%;
     
-    --card: 215 20% 14%;
+    --card: 222 47% 10%;
     --card-foreground: 210 40% 98%;
     
-    --popover: 215 20% 14%;
+    --popover: 222 47% 10%;
     --popover-foreground: 210 40% 98%;
     
     --primary: 210 40% 98%;
@@ -74,24 +74,24 @@
     --muted: 215 20% 18%;
     --muted-foreground: 215 20% 65%;
     
-    --accent: 120 30% 45%; /* Lighter olive for dark mode */
-    --accent-foreground: 222 47% 11%;
+    --accent: 142 76% 36%; 
+    --accent-foreground: 210 40% 98%;
     
     --destructive: 0 62% 30%;
     --destructive-foreground: 210 40% 98%;
 
     --border: 215 20% 18%;
     --input: 215 20% 18%;
-    --ring: 210 40% 98%;
+    --ring: 142 76% 36%;
 
     --sidebar-background: 222 47% 11%;
     --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 120 30% 45%;
+    --sidebar-primary: 142 76% 36%;
     --sidebar-primary-foreground: 222 47% 11%;
     --sidebar-accent: 215 20% 18%;
     --sidebar-accent-foreground: 210 40% 98%;
     --sidebar-border: 215 20% 18%;
-    --sidebar-ring: 120 30% 45%;
+    --sidebar-ring: 142 76% 36%;
   }
 }
 
@@ -100,16 +100,26 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground antialiased;
-    font-family: var(--font-sans);
+    @apply bg-slate-50 dark:bg-black text-foreground antialiased;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   }
   h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-display);
-    @apply tracking-tight;
+    @apply font-bold tracking-tight text-slate-900 dark:text-white;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   }
   .font-mono {
-    font-family: var(--font-mono);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   }
+}
+
+/* iOS glass effect */
+.glass {
+  @apply bg-white/80 dark:bg-black/80 backdrop-blur-xl border-t border-white/20 dark:border-white/10;
+}
+
+/* Card overrides for 24px radius */
+.card-ios {
+  @apply rounded-[24px] border-none shadow-sm bg-white dark:bg-slate-900/50;
 }
 
 /* Subtle elevation utilities */

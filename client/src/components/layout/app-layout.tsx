@@ -6,130 +6,73 @@ import {
   Target, 
   MessageSquareWarning, 
   Users,
-  ShieldAlert,
-  ChevronRight
+  ShieldAlert
 } from "lucide-react";
-import { 
-  Sidebar, 
-  SidebarContent, 
-  SidebarGroup, 
-  SidebarGroupContent, 
-  SidebarGroupLabel, 
-  SidebarMenu, 
-  SidebarMenuButton, 
-  SidebarMenuItem,
-  SidebarProvider,
-  SidebarTrigger
-} from "@/components/ui/sidebar";
 import { useProfile } from "@/hooks/use-profile";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 
 const navItems = [
-  { title: "Dashboard", url: "/", icon: Home },
+  { title: "Home", url: "/", icon: Home },
   { title: "Vault", url: "/vault", icon: FolderLock },
   { title: "Readiness", url: "/readiness", icon: Target },
-  { title: "Advisor", url: "/advisor", icon: MessageSquareWarning },
   { title: "Community", url: "/community", icon: Users },
+  { title: "Advisor", url: "/advisor", icon: MessageSquareWarning },
 ];
 
-function AppSidebar() {
-  const [location] = useLocation();
-  const { data: profile, isLoading } = useProfile();
-
-  return (
-    <Sidebar className="border-r border-border bg-sidebar">
-      <SidebarContent>
-        <div className="p-6 flex items-center gap-3">
-          <div className="w-8 h-8 bg-accent rounded-md flex items-center justify-center shadow-inner">
-            <Target className="w-5 h-5 text-accent-foreground" />
-          </div>
-          <span className="font-display font-bold text-xl tracking-tight">Waypoints</span>
-        </div>
-
-        <div className="px-4 pb-6">
-          <div className="bg-secondary/50 rounded-xl p-4 border border-border/50 backdrop-blur-sm">
-            {isLoading ? (
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-20" />
-                <Skeleton className="h-3 w-32" />
-              </div>
-            ) : profile ? (
-              <div className="flex flex-col gap-1">
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold text-sm">{profile.rank} {profile.branch}</span>
-                  {profile.isPro && (
-                    <Badge variant="secondary" className="bg-accent/20 text-accent hover:bg-accent/20 text-[10px] uppercase font-bold border-accent/30 h-5 px-1.5">PRO</Badge>
-                  )}
-                </div>
-                <span className="text-xs text-muted-foreground font-mono">MOS: {profile.mos}</span>
-              </div>
-            ) : null}
-          </div>
-        </div>
-
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-xs uppercase tracking-wider font-semibold text-muted-foreground/70">Career OS</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {navItems.map((item) => {
-                const isActive = location === item.url;
-                return (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton 
-                      asChild 
-                      isActive={isActive}
-                      className={`
-                        my-0.5 rounded-lg transition-colors
-                        ${isActive 
-                          ? 'bg-accent text-accent-foreground hover:bg-accent hover:text-accent-foreground shadow-sm' 
-                          : 'hover:bg-secondary text-foreground/80'}
-                      `}
-                    >
-                      <Link href={item.url} className="flex items-center gap-3 px-3 py-2.5">
-                        <item.icon className="w-4 h-4" />
-                        <span className="font-medium text-sm">{item.title}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-      </SidebarContent>
-    </Sidebar>
-  );
-}
-
 export function AppLayout({ children }: { children: ReactNode }) {
-  const style = {
-    "--sidebar-width": "18rem",
-    "--sidebar-width-icon": "4rem",
-  };
+  const [location] = useLocation();
+  const { data: profile } = useProfile();
 
   return (
-    <SidebarProvider style={style as React.CSSProperties}>
-      <div className="flex h-screen w-full bg-background overflow-hidden selection:bg-accent/20">
-        <AppSidebar />
-        <div className="flex flex-col flex-1 min-w-0">
-          <header className="h-16 flex items-center px-4 border-b border-border/50 bg-background/80 backdrop-blur-md sticky top-0 z-20">
-            <SidebarTrigger className="md:hidden mr-4" />
-            <div className="flex-1" />
-            {/* Optional Header Actions */}
-            <div className="flex items-center gap-4">
-              <button className="text-muted-foreground hover:text-foreground transition-colors">
-                <ShieldAlert className="w-5 h-5" />
-              </button>
+    <div className="min-h-screen w-full bg-slate-50 dark:bg-black flex justify-center selection:bg-emerald-500/20">
+      {/* Mobile Viewport Container */}
+      <div className="w-full max-w-[430px] min-h-screen bg-white dark:bg-slate-950 relative flex flex-col shadow-2xl overflow-hidden border-x border-slate-200 dark:border-slate-800">
+        
+        {/* Header */}
+        <header className="h-20 flex items-center justify-between px-6 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md sticky top-0 z-30 border-b border-slate-100 dark:border-slate-800">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-emerald-500 rounded-lg flex items-center justify-center shadow-lg shadow-emerald-500/20">
+              <Target className="w-5 h-5 text-white" />
             </div>
-          </header>
-          <main className="flex-1 overflow-y-auto p-4 md:p-8 lg:p-10 scroll-smooth">
-            <div className="max-w-6xl mx-auto">
-              {children}
-            </div>
-          </main>
-        </div>
+            <span className="font-bold text-xl tracking-tight text-slate-900 dark:text-white">Waypoints</span>
+          </div>
+          <div className="flex items-center gap-3">
+            {profile?.isPro && (
+              <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 border-emerald-500/20 text-[10px] uppercase font-black px-2 py-0.5 rounded-full">PRO</Badge>
+            )}
+            <button className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">
+              <ShieldAlert className="w-5 h-5" />
+            </button>
+          </div>
+        </header>
+
+        {/* Main Content */}
+        <main className="flex-1 overflow-y-auto pb-24 pt-4 px-6 scroll-smooth">
+          {children}
+        </main>
+
+        {/* Bottom Tab Bar */}
+        <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] h-20 glass z-40 px-4 flex items-center justify-around pb-2 shadow-[0_-1px_10px_rgba(0,0,0,0.02)]">
+          {navItems.map((item) => {
+            const isActive = location === item.url;
+            return (
+              <Link key={item.title} href={item.url}>
+                <a className="flex flex-col items-center gap-1.5 transition-all duration-300 group">
+                  <div className={`p-1.5 rounded-xl transition-all duration-300 ${isActive ? 'text-emerald-500 scale-110' : 'text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:group-hover:text-slate-400'}`}>
+                    <item.icon className={`w-6 h-6 ${isActive ? 'fill-emerald-500/10 stroke-[2.5px]' : 'stroke-[1.5px]'}`} />
+                  </div>
+                  <span className={`text-[10px] font-bold tracking-tight uppercase ${isActive ? 'text-emerald-500' : 'text-slate-400 dark:text-slate-500'}`}>
+                    {item.title}
+                  </span>
+                  {isActive && (
+                    <div className="absolute -top-1 w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
+                  )}
+                </a>
+              </Link>
+            );
+          })}
+        </nav>
       </div>
-    </SidebarProvider>
+    </div>
   );
 }

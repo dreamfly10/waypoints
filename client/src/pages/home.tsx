@@ -71,64 +71,64 @@ export default function Home() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           
           {/* Readiness Score Card */}
-          <Card className="hover-elevate border-accent/20 shadow-sm lg:col-span-2 relative overflow-hidden group">
-            <div className="absolute right-0 top-0 w-64 h-64 bg-accent/5 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none group-hover:bg-accent/10 transition-colors duration-500" />
+          <Card className="card-ios shadow-emerald-500/5 lg:col-span-2 relative overflow-hidden group">
+            <div className="absolute right-0 top-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none group-hover:bg-emerald-500/10 transition-colors duration-500" />
             <CardHeader className="pb-2">
-              <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                <Activity className="w-5 h-5 text-accent" />
+              <CardTitle className="text-xl font-bold flex items-center gap-2 text-slate-900 dark:text-white">
+                <Activity className="w-5 h-5 text-emerald-500" />
                 Overall Readiness
               </CardTitle>
-              <CardDescription>Composite score based on your vault and physical fitness.</CardDescription>
+              <CardDescription className="text-slate-500 dark:text-slate-400">Composite score based on your vault and physical fitness.</CardDescription>
             </CardHeader>
             <CardContent>
               {profileLoading ? (
-                <Skeleton className="h-12 w-full mt-4" />
+                <Skeleton className="h-12 w-full mt-4 rounded-2xl" />
               ) : (
                 <div className="mt-4">
                   <div className="flex justify-between items-end mb-3">
-                    <span className="text-4xl font-bold font-display tracking-tighter text-foreground">
-                      {profile?.readinessScore}<span className="text-xl text-muted-foreground font-medium">/100</span>
+                    <span className="text-5xl font-black tracking-tighter text-slate-900 dark:text-white">
+                      {profile?.readinessScore}<span className="text-xl text-slate-400 dark:text-slate-500 font-bold">/100</span>
                     </span>
-                    <span className="text-sm font-medium text-accent">Optimal Range</span>
+                    <span className="text-xs font-black uppercase tracking-widest text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded-full">Optimal</span>
                   </div>
-                  <Progress value={profile?.readinessScore || 0} className="h-3 bg-secondary" indicatorClassName="bg-accent" />
+                  <Progress value={profile?.readinessScore || 0} className="h-3 bg-slate-100 dark:bg-slate-800" indicatorClassName="bg-emerald-500 rounded-full" />
                 </div>
               )}
             </CardContent>
           </Card>
 
           {/* Snapshot Card */}
-          <Card className="hover-elevate shadow-sm">
+          <Card className="card-ios shadow-slate-200/50 dark:shadow-none">
             <CardHeader className="pb-4">
-              <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                <Award className="w-5 h-5 text-muted-foreground" />
+              <CardTitle className="text-xl font-bold flex items-center gap-2 text-slate-900 dark:text-white">
+                <Award className="w-5 h-5 text-slate-400" />
                 Profile Snapshot
               </CardTitle>
             </CardHeader>
             <CardContent>
               {profileLoading ? (
                 <div className="space-y-4">
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-3/4" />
-                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-full rounded-full" />
+                  <Skeleton className="h-4 w-3/4 rounded-full" />
+                  <Skeleton className="h-4 w-full rounded-full" />
                 </div>
               ) : (
-                <div className="space-y-4 font-mono text-sm">
-                  <div className="flex justify-between border-b border-border/50 pb-2">
-                    <span className="text-muted-foreground">Branch</span>
-                    <span className="font-semibold text-foreground">{profile?.branch}</span>
+                <div className="space-y-4 font-bold text-sm">
+                  <div className="flex justify-between border-b border-slate-50 dark:border-slate-800 pb-2">
+                    <span className="text-slate-400 dark:text-slate-500">Branch</span>
+                    <span className="text-slate-900 dark:text-white">{profile?.branch}</span>
                   </div>
-                  <div className="flex justify-between border-b border-border/50 pb-2">
-                    <span className="text-muted-foreground">Rank</span>
-                    <span className="font-semibold text-foreground">{profile?.rank}</span>
+                  <div className="flex justify-between border-b border-slate-50 dark:border-slate-800 pb-2">
+                    <span className="text-slate-400 dark:text-slate-500">Rank</span>
+                    <span className="text-slate-900 dark:text-white">{profile?.rank}</span>
                   </div>
-                  <div className="flex justify-between border-b border-border/50 pb-2">
-                    <span className="text-muted-foreground">MOS</span>
-                    <span className="font-semibold text-foreground">{profile?.mos}</span>
+                  <div className="flex justify-between border-b border-slate-50 dark:border-slate-800 pb-2">
+                    <span className="text-slate-400 dark:text-slate-500">MOS</span>
+                    <span className="text-slate-900 dark:text-white">{profile?.mos}</span>
                   </div>
                   <div className="flex justify-between pb-1">
-                    <span className="text-muted-foreground">Latest PFT</span>
-                    <span className="font-semibold text-foreground">{profile?.pftScore}</span>
+                    <span className="text-slate-400 dark:text-slate-500">Latest PFT</span>
+                    <span className="text-emerald-500 font-black">{profile?.pftScore}</span>
                   </div>
                 </div>
               )}
@@ -138,45 +138,47 @@ export default function Home() {
 
         {/* Action Items / Alerts */}
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold font-display">Action Items</h2>
-            <Link href="/readiness" className="text-sm text-accent hover:underline font-medium flex items-center">
-              View All <ChevronRight className="w-4 h-4 ml-1" />
+          <div className="flex items-center justify-between px-2">
+            <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Action Items</h2>
+            <Link href="/readiness" className="text-xs font-black uppercase tracking-widest text-emerald-500 hover:text-emerald-600 transition-colors">
+              See All
             </Link>
           </div>
           
           <div className="grid gap-3">
             {alertsLoading ? (
-              Array(3).fill(0).map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-xl" />)
+              Array(3).fill(0).map((_, i) => <Skeleton key={i} className="h-20 w-full rounded-3xl" />)
             ) : alerts?.length === 0 ? (
-              <div className="p-8 text-center bg-secondary/30 rounded-xl border border-border/50 text-muted-foreground">
-                <CheckCircle2 className="w-8 h-8 mx-auto mb-3 opacity-50" />
-                <p>No pending action items. You're up to date.</p>
+              <div className="p-10 text-center bg-slate-50 dark:bg-slate-900 rounded-[32px] border border-dashed border-slate-200 dark:border-slate-800 text-slate-400">
+                <CheckCircle2 className="w-10 h-10 mx-auto mb-4 opacity-20" />
+                <p className="font-bold text-sm">Tactical update complete. All systems green.</p>
               </div>
             ) : (
               alerts?.map((alert) => (
                 <div 
                   key={alert.id}
                   className={`
-                    p-4 rounded-xl border flex items-start gap-4 transition-all hover-elevate
-                    ${alert.type === 'warning' ? 'bg-destructive/5 border-destructive/20' : 
-                      alert.type === 'success' ? 'bg-accent/5 border-accent/20' : 
-                      'bg-secondary/50 border-border'}
+                    p-5 rounded-[24px] flex items-center gap-4 transition-all hover:scale-[1.02] active:scale-95
+                    ${alert.severity === 'high' ? 'bg-rose-50 dark:bg-rose-500/10' : 
+                      alert.severity === 'medium' ? 'bg-amber-50 dark:bg-amber-500/10' : 
+                      'bg-slate-50 dark:bg-slate-900/50'}
                   `}
                 >
-                  <div className="mt-0.5 shrink-0">
-                    {alert.type === 'warning' && <AlertCircle className="w-5 h-5 text-destructive" />}
-                    {alert.type === 'success' && <CheckCircle2 className="w-5 h-5 text-accent" />}
-                    {alert.type === 'info' && <Info className="w-5 h-5 text-blue-500" />}
+                  <div className="shrink-0">
+                    {alert.severity === 'high' && <div className="p-2 bg-rose-500 rounded-xl shadow-lg shadow-rose-500/20"><AlertCircle className="w-5 h-5 text-white" /></div>}
+                    {alert.severity === 'medium' && <div className="p-2 bg-amber-500 rounded-xl shadow-lg shadow-amber-500/20"><Info className="w-5 h-5 text-white" /></div>}
+                    {alert.severity === 'low' && <div className="p-2 bg-slate-400 rounded-xl shadow-lg shadow-slate-400/20"><CheckCircle2 className="w-5 h-5 text-white" /></div>}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className={`font-medium text-sm ${!alert.isRead ? 'text-foreground' : 'text-muted-foreground'}`}>
+                    <p className="font-bold text-sm text-slate-900 dark:text-slate-100">
+                      {alert.title}
+                    </p>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-1">
                       {alert.message}
                     </p>
-                    <p className="text-xs text-muted-foreground mt-1 font-mono">{alert.date}</p>
                   </div>
                   {!alert.isRead && (
-                    <div className="w-2 h-2 rounded-full bg-accent shrink-0 mt-1.5" />
+                    <div className="w-2 h-2 rounded-full bg-emerald-500 shrink-0 shadow-sm shadow-emerald-500/50" />
                   )}
                 </div>
               ))
