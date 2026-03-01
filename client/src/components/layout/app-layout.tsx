@@ -214,10 +214,12 @@ export function AppLayout({ children }: { children: ReactNode }) {
                                   <p className="text-[10px] text-slate-400 font-bold">Secure your career vault</p>
                                 </div>
                                 <Switch 
-                                  checked={profile?.vaultLockEnabled} 
+                                  checked={profile?.vaultLockEnabled || (!profile?.vaultPassword && newPassword.length > 0)} 
                                   onCheckedChange={(val) => {
                                     if (val && !profile?.vaultPassword) {
-                                      setPasswordStep('create');
+                                      // If no password exists, user needs to fill the form below.
+                                      // We can't actually "turn on" the switch in the DB yet, 
+                                      // but we can show the form.
                                     } else {
                                       updateProfile({ vaultLockEnabled: val });
                                     }
@@ -225,7 +227,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
                                 />
                               </div>
 
-                              {(profile?.vaultLockEnabled || (!profile?.vaultPassword && passwordStep === 'create')) && (
+                              {(profile?.vaultLockEnabled || !profile?.vaultPassword) && (
                                 <form onSubmit={handlePasswordSubmit} className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
                                   <div className="space-y-4">
                                     <div className="space-y-2">
@@ -239,7 +241,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
                                         value={newPassword}
                                         onChange={(e) => setNewPassword(e.target.value)}
                                         className="h-12 rounded-xl bg-slate-50 dark:bg-slate-800 border-none font-black text-center text-lg tracking-[1em]"
-                                        autoFocus
+                                        disabled={!profile?.vaultLockEnabled && !!profile?.vaultPassword}
                                       />
                                     </div>
                                     <div className="space-y-2">
@@ -253,10 +255,15 @@ export function AppLayout({ children }: { children: ReactNode }) {
                                         value={confirmPassword}
                                         onChange={(e) => setConfirmPassword(e.target.value)}
                                         className="h-12 rounded-xl bg-slate-50 dark:bg-slate-800 border-none font-black text-center text-lg tracking-[1em]"
+                                        disabled={!profile?.vaultLockEnabled && !!profile?.vaultPassword}
                                       />
                                     </div>
                                   </div>
-                                  <Button type="submit" className="w-full h-12 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-black uppercase tracking-widest">
+                                  <Button 
+                                    type="submit" 
+                                    className="w-full h-12 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-black uppercase tracking-widest"
+                                    disabled={!profile?.vaultLockEnabled && !!profile?.vaultPassword}
+                                  >
                                     Secure Vault
                                   </Button>
                                 </form>
