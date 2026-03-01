@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Heart, MessageCircle, Share2, Users } from "lucide-react";
+import { Heart, MessageCircle, Share2, Users, Award } from "lucide-react";
 import { format } from "date-fns";
 
 export default function Community() {
