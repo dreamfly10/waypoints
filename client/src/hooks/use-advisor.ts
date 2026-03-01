@@ -12,8 +12,8 @@ export class AdvisorProRequiredError extends Error {
 
 export function useAdvisorAsk() {
   return useMutation({
-    mutationFn: async (query: string) => {
-      const validated = api.advisor.ask.input.parse({ query });
+    mutationFn: async ({ query, attachedVaultItemId }: { query: string; attachedVaultItemId?: number }) => {
+      const validated = api.advisor.ask.input.parse({ query, attachedVaultItemId });
       const res = await fetch(api.advisor.ask.path, {
         method: api.advisor.ask.method,
         headers: { "Content-Type": "application/json" },

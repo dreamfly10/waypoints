@@ -85,10 +85,16 @@ export const api = {
     ask: {
       method: 'POST' as const,
       path: '/api/advisor/ask' as const,
-      input: z.object({ query: z.string() }),
+      input: z.object({ 
+        query: z.string(),
+        attachedVaultItemId: z.number().optional()
+      }),
       responses: {
-        200: z.object({ response: z.string() }),
-        403: z.object({ message: z.string(), requiresPro: z.boolean() }), // Pro required error
+        200: z.object({ 
+          response: z.string(),
+          suggestions: z.array(z.string()).optional()
+        }),
+        403: z.object({ message: z.string(), requiresPro: z.boolean() }),
         400: errorSchemas.validation,
       }
     }

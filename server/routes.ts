@@ -83,34 +83,62 @@ export async function registerRoutes(
   // Advisor
   app.post(api.advisor.ask.path, async (req, res) => {
     try {
-      const { query } = api.advisor.ask.input.parse(req.body);
+      const { query, attachedVaultItemId } = api.advisor.ask.input.parse(req.body);
       const profile = await storage.getProfile();
+      const vaultItems = await storage.getVaultItems();
+      const alerts = await storage.getAlerts();
       
       const lowerQuery = query.toLowerCase();
       const isAdvancedRequest = lowerQuery.includes("promotion") || 
                                 lowerQuery.includes("advanced") || 
                                 lowerQuery.includes("strategy") ||
-                                lowerQuery.includes("detailed");
+                                lowerQuery.includes("detailed") ||
+                                lowerQuery.includes("percentile") ||
+                                lowerQuery.includes("benchmarking");
                                 
       if (isAdvancedRequest && !profile.isPro) {
         return res.status(403).json({ 
-          message: "This advanced career strategy requires Waypoints Pro.", 
+          message: "Detailed career strategy and peer benchmarking require Waypoints Pro.", 
           requiresPro: true 
         });
       }
 
-      // Mock responses based on profile data
-      let response = "I can help with that. ";
-      
-      if (isAdvancedRequest) {
-        response = `As a ${profile.rank} in the ${profile.branch} (MOS ${profile.mos}), your next promotion requires focusing on key leadership billets. Given your PFT score of ${profile.pftScore}, maintaining top physical readiness is crucial. Try completing advanced NCO courses this year. Your readiness score is currently ${profile.readinessScore}%.`;
+      let response = "";
+      const missingItems = alerts
+        .filter(a => a.actionType === 'upload')
+        .map(a => a.relatedVaultType)
+        .filter(Boolean);
+
+      const attachedItem = attachedVaultItemId 
+        ? vaultItems.find(i => i.id === attachedVaultItemId)
+        : null;
+
+      if (lowerQuery.includes("percentile") || lowerQuery.includes("benchmarking")) {
+        // Only reached if isPro is true
+        response = `Based on your PFT score of ${profile.pftScore}, you are currently in the top 15% of ${profile.rank}s in the ${profile.branch}. Your MOS (${profile.mos}) average is 245. You are exceeding peer standards by ${profile.pftScore - 245} points.`;
+      } else if (attachedItem) {
+        response = `I've analyzed your attached ${attachedItem.type} document: "${attachedItem.title}". `;
+        if (attachedItem.type === 'pft') {
+          response += `Your score of ${profile.pftScore} is solid. To hit the next tier, focus on your run time. `;
+        } else {
+          response += `This helps confirm your record. `;
+        }
+        response += `Keep in mind you are still missing: ${missingItems.join(', ') || 'nothing'}.`;
+      } else if (isAdvancedRequest) {
+        response = `As a ${profile.rank} (${profile.mos}), your next promotion window opens in 6 months. Your PFT score (${profile.pftScore}) is competitive, but your readiness is at ${profile.readinessScore}%. You must address these missing items: ${missingItems.join(', ') || 'none'}.`;
       } else if (lowerQuery.includes("readiness") || lowerQuery.includes("score")) {
-        response = `Your current readiness score is ${profile.readinessScore}%. Your PFT score of ${profile.pftScore} contributes to this. ${profile.readinessScore >= 95 && !profile.isPro ? "You've reached the free tier cap. Go Pro to reach 100%!" : ""}`;
+        response = `Your readiness score is ${profile.readinessScore}%. This is calculated from your Vault completeness and your PFT score of ${profile.pftScore}. Missing items: ${missingItems.join(', ') || 'none'}.`;
       } else {
-        response = `Based on your profile as a ${profile.rank}, I recommend focusing on your immediate readiness requirements. Let me know if you want detailed promotion strategies!`;
+        response = `I'm your Waypoints Advisor. You can ask about your promotion chances, readiness score, or peer benchmarking. Currently, your PFT is ${profile.pftScore} and readiness is ${profile.readinessScore}%.`;
       }
 
-      res.json({ response });
+      const suggestions = [
+        "What is my promotion strategy?",
+        "How do I improve my readiness?",
+        "Show my peer benchmarking"
+      ];
+
+      res.json({ response, suggestions });
     } catch (err) {
       if (err instanceof z.ZodError) {
         return res.status(400).json({
