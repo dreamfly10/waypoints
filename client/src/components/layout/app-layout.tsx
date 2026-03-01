@@ -58,24 +58,19 @@ export function AppLayout({ children }: { children: ReactNode }) {
 
   const handlePasswordSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (passwordStep === 'create') {
-      if (!/^\d+$/.test(newPassword)) {
-        toast({ title: "Invalid Password", description: "Please enter numbers only.", variant: "destructive" });
-        return;
-      }
-      setPasswordStep('confirm');
-    } else {
-      if (newPassword !== confirmPassword) {
-        toast({ title: "Mismatch", description: "Passwords do not match.", variant: "destructive" });
-        return;
-      }
-      updateProfile({ vaultPassword: newPassword, vaultLockEnabled: true });
-      toast({ title: "Security Enabled", description: "Vault password has been set." });
-      setValuePasswordOpen(false);
-      setPasswordStep('create');
-      setNewPassword("");
-      setConfirmPassword("");
+    if (!/^\d+$/.test(newPassword) || !/^\d+$/.test(confirmPassword)) {
+      toast({ title: "Invalid Password", description: "Please enter numbers only.", variant: "destructive" });
+      return;
     }
+    if (newPassword !== confirmPassword) {
+      toast({ title: "Mismatch", description: "Passwords do not match.", variant: "destructive" });
+      return;
+    }
+    updateProfile({ vaultPassword: newPassword, vaultLockEnabled: true });
+    toast({ title: "Security Enabled", description: "Vault password has been set." });
+    setValuePasswordOpen(false);
+    setNewPassword("");
+    setConfirmPassword("");
   };
 
   return (
@@ -232,22 +227,37 @@ export function AppLayout({ children }: { children: ReactNode }) {
 
                               {(profile?.vaultLockEnabled || (!profile?.vaultPassword && passwordStep === 'create')) && (
                                 <form onSubmit={handlePasswordSubmit} className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
-                                  <div className="space-y-2">
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                                      {passwordStep === 'create' ? 'Enter Numeric Password' : 'Confirm Password'}
-                                    </label>
-                                    <Input 
-                                      type="password"
-                                      inputMode="numeric"
-                                      pattern="[0-9]*"
-                                      value={passwordStep === 'create' ? newPassword : confirmPassword}
-                                      onChange={(e) => passwordStep === 'create' ? setNewPassword(e.target.value) : setConfirmPassword(e.target.value)}
-                                      className="h-12 rounded-xl bg-slate-50 dark:bg-slate-800 border-none font-black text-center text-lg tracking-[1em]"
-                                      autoFocus
-                                    />
+                                  <div className="space-y-4">
+                                    <div className="space-y-2">
+                                      <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                        Enter your password
+                                      </label>
+                                      <Input 
+                                        type="password"
+                                        inputMode="numeric"
+                                        pattern="[0-9]*"
+                                        value={newPassword}
+                                        onChange={(e) => setNewPassword(e.target.value)}
+                                        className="h-12 rounded-xl bg-slate-50 dark:bg-slate-800 border-none font-black text-center text-lg tracking-[1em]"
+                                        autoFocus
+                                      />
+                                    </div>
+                                    <div className="space-y-2">
+                                      <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                        Confirm your password
+                                      </label>
+                                      <Input 
+                                        type="password"
+                                        inputMode="numeric"
+                                        pattern="[0-9]*"
+                                        value={confirmPassword}
+                                        onChange={(e) => setConfirmPassword(e.target.value)}
+                                        className="h-12 rounded-xl bg-slate-50 dark:bg-slate-800 border-none font-black text-center text-lg tracking-[1em]"
+                                      />
+                                    </div>
                                   </div>
                                   <Button type="submit" className="w-full h-12 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-black uppercase tracking-widest">
-                                    {passwordStep === 'create' ? 'Next' : 'Secure Vault'}
+                                    Secure Vault
                                   </Button>
                                 </form>
                               )}
