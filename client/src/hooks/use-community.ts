@@ -13,6 +13,19 @@ export function useCommunityPosts() {
   });
 }
 
+export function useLikePost() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (postId: number) => {
+      // Mock like functionality as it's not in schema yet
+      return { success: true, id: postId };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [api.community.list.path] });
+    },
+  });
+}
+
 export function useCreateCommunityPost() {
   const queryClient = useQueryClient();
   return useMutation({

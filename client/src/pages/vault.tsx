@@ -47,6 +47,9 @@ export default function Vault() {
 
   const filteredItems = items?.filter(item => activeTab === "all" || item.type === activeTab);
 
+  const [showMilestoneModal, setShowMilestoneModal] = useState(false);
+  const [thresholdReached, setThresholdReached] = useState<number | null>(null);
+
   const handleUpload = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title || !type) return;
@@ -71,7 +74,16 @@ export default function Vault() {
         onSuccess: (data) => {
           setLastUploaded({ ...data, extractedFields });
           setOpen(false);
-          setOpenSuccess(true);
+          
+          // Check for threshold
+          const newScore = profile?.readinessScore ? profile.readinessScore + 5 : 5; // Simplified logic for demo
+          if (newScore >= 70 && (!profile?.readinessScore || profile.readinessScore < 70)) {
+            setThresholdReached(70);
+            setShowMilestoneModal(true);
+          } else {
+            setOpenSuccess(true);
+          }
+          
           setTitle("");
           setType("");
         }
@@ -234,6 +246,60 @@ export default function Vault() {
                 </Button>
               </DialogFooter>
             </form>
+          </DialogContent>
+        </Dialog>
+
+        {/* Milestone Threshold Modal */}
+        <Dialog open={showMilestoneModal} onOpenChange={setShowMilestoneModal}>
+          <DialogContent className="rounded-[32px] border-none max-w-[90vw] sm:max-w-[400px] p-0 overflow-hidden">
+            <div className="bg-emerald-500 p-8 text-center text-white relative">
+              <motion.div 
+                initial={{ scale: 0 }} animate={{ scale: 1 }}
+                className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4"
+              >
+                <Trophy className="w-10 h-10 text-white" />
+              </motion.div>
+              <h2 className="text-2xl font-black">You reached 70% readiness!</h2>
+              <p className="text-white/80 font-bold text-sm mt-2 uppercase tracking-widest">Major Career Milestone</p>
+              
+              {/* Share Card Preview */}
+              <div className="mt-6 bg-slate-900 rounded-2xl p-6 text-left shadow-2xl relative overflow-hidden">
+                 <div className="absolute right-0 top-0 w-24 h-24 bg-emerald-500/10 rounded-full blur-2xl" />
+                 <div className="flex justify-between items-start relative z-10">
+                   <div>
+                     <p className="text-[10px] font-black uppercase tracking-widest text-emerald-400 mb-1">{profile?.rank} {profile?.lastName}</p>
+                     <h4 className="text-xl font-black">Readiness Level</h4>
+                     <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mt-1">{format(new Date(), 'MMM d, yyyy')}</p>
+                   </div>
+                   <div className="text-right">
+                     <span className="text-4xl font-black text-white">{profile?.readinessScore || 70}</span>
+                     <p className="text-[10px] font-bold text-emerald-400">▲ +5 PTS</p>
+                   </div>
+                 </div>
+              </div>
+            </div>
+            
+            <div className="p-6 space-y-3 bg-white dark:bg-slate-950">
+              <Button 
+                onClick={() => {
+                   // Mock share to community
+                   toast({ title: "Shared to Community", description: "Your milestone is now live." });
+                   setShowMilestoneModal(false);
+                }}
+                className="w-full h-12 rounded-xl bg-slate-900 dark:bg-emerald-500 text-white font-black uppercase tracking-widest"
+              >
+                Post to Community
+              </Button>
+              <Button 
+                variant="outline"
+                className="w-full h-12 rounded-xl border-slate-200 text-slate-900 dark:text-white font-black uppercase tracking-widest text-[10px]"
+              >
+                Invite 2 Peers to Unlock Pro Preview
+              </Button>
+              <Button variant="ghost" onClick={() => setShowMilestoneModal(false)} className="w-full text-slate-400 font-bold text-xs">
+                Skip for now
+              </Button>
+            </div>
           </DialogContent>
         </Dialog>
 

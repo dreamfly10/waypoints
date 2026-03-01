@@ -107,6 +107,29 @@ export default function Community() {
                 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
                 className="space-y-4 pt-2"
               >
+                {/* Celebratory Animation for new posts */}
+                <AnimatePresence>
+                  {posts?.[0]?.author === "Current User" && (
+                    <motion.div
+                      initial={{ scale: 0.8, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      className="absolute inset-0 pointer-events-none z-50 flex items-center justify-center"
+                    >
+                      <motion.div 
+                        animate={{ 
+                          scale: [1, 2, 0],
+                          opacity: [1, 1, 0],
+                          rotate: [0, 45, 90]
+                        }}
+                        transition={{ duration: 2 }}
+                        className="text-4xl"
+                      >
+                        🎉✨🎊
+                      </motion.div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
                 {isLoading ? (
                   Array(3).fill(0).map((_, i) => <Skeleton key={i} className="h-48 w-full rounded-[24px]" />)
                 ) : milestones.map((post) => (
