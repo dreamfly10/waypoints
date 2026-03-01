@@ -122,7 +122,29 @@
   @apply rounded-[24px] border-none shadow-sm bg-white dark:bg-slate-900/50;
 }
 
-/* Subtle elevation utilities */
-.hover-elevate {
-  @apply transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-md;
+/* Smooth overscroll behavior */
+.overscroll-none {
+  @apply overscroll-y-none;
+}
+
+/* Shimmer effect for loading states */
+.shimmer {
+  @apply relative overflow-hidden before:absolute before:inset-0 before:-translate-x-full before:animate-[shimmer_2s_infinite] before:bg-gradient-to-r before:from-transparent before:via-white/20 dark:before:via-white/10 before:to-transparent;
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Micro-interaction for score updates */
+.score-pulse {
+  animation: score-pulse 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes score-pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); text-shadow: 0 0 10px rgba(16, 185, 129, 0.4); }
+  100% { transform: scale(1); }
 }

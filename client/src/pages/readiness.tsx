@@ -88,7 +88,7 @@ export default function Readiness() {
           </div>
 
           {/* Animated Composite Score Circle */}
-          <div className="relative flex items-center justify-center py-4">
+          <div className={`relative flex items-center justify-center py-4 ${displayScore !== currentScore ? 'score-pulse' : ''}`}>
             <svg className="w-48 h-48 transform -rotate-90">
               <circle
                 cx="96"

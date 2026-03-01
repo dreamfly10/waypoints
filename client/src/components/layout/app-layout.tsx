@@ -47,12 +47,12 @@ export function AppLayout({ children }: { children: ReactNode }) {
         </header>
 
         {/* Main Content */}
-        <main className="flex-1 overflow-y-auto pb-24 pt-4 px-6 scroll-smooth">
+        <main className="flex-1 overflow-y-auto pb-24 pt-4 px-6 scroll-smooth relative overscroll-none">
           {children}
         </main>
 
         {/* Bottom Tab Bar */}
-        <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] h-20 glass z-40 px-4 flex items-center justify-around pb-2 shadow-[0_-1px_10px_rgba(0,0,0,0.02)]">
+        <nav className="sticky bottom-0 left-0 right-0 w-full h-20 glass z-50 px-4 flex items-center justify-around pb-2 shadow-[0_-8px_20px_rgba(0,0,0,0.05)] border-t border-slate-100 dark:border-slate-800">
           {navItems.map((item) => {
             const isActive = location === item.url;
             return (

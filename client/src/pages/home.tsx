@@ -5,10 +5,11 @@ import { AppLayout } from "@/components/layout/app-layout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, CheckCircle2, Info, ChevronRight, Share2, ArrowUpRight, Calendar, Trophy } from "lucide-react";
+import { AlertCircle, CheckCircle2, Info, ChevronRight, Award, Share2, ArrowUpRight, Calendar, Trophy } from "lucide-react";
 import { Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { useState, useEffect, useRef } from "react";
 
 export default function Home() {
   const { data: profile, isLoading: profileLoading } = useProfile();
@@ -16,6 +17,21 @@ export default function Home() {
   const { data: posts, isLoading: postsLoading } = useCommunityPosts();
   const { mutate: shareMilestone, isPending: isSharing } = useCreateCommunityPost();
   const { toast } = useToast();
+
+  const prevScoreRef = useRef(profile?.readinessScore);
+  const [isScoreUpdating, setIsScoreUpdating] = useState(false);
+
+  useEffect(() => {
+    if (profile?.readinessScore !== undefined && prevScoreRef.current !== undefined && profile.readinessScore !== prevScoreRef.current) {
+      setIsScoreUpdating(true);
+      const timer = setTimeout(() => setIsScoreUpdating(false), 500);
+      prevScoreRef.current = profile.readinessScore;
+      return () => clearTimeout(timer);
+    }
+    if (profile?.readinessScore !== undefined) {
+      prevScoreRef.current = profile.readinessScore;
+    }
+  }, [profile?.readinessScore]);
 
   const handleShareMilestone = () => {
     if (!profile) return;
@@ -82,7 +98,7 @@ export default function Home() {
         <Card className="card-ios bg-slate-900 dark:bg-emerald-950/20 text-white overflow-hidden relative border-none shadow-xl shadow-emerald-500/10">
           <div className="absolute right-0 top-0 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none" />
           <CardContent className="p-8 flex items-center justify-between gap-6">
-            <div className="relative flex items-center justify-center shrink-0">
+            <div className={`relative flex items-center justify-center shrink-0 ${isScoreUpdating ? 'score-pulse' : ''}`}>
               <svg className="w-32 h-32 transform -rotate-90">
                 <circle
                   cx="64"
