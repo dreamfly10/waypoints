@@ -140,7 +140,7 @@ export default function Home() {
                   />
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-3xl font-black">{profile?.readinessScore || 0}</span>
+                  <span className="text-4xl font-black text-white">{profile?.readinessScore || 0}</span>
                   <span className="text-[10px] font-black uppercase tracking-widest text-white/50">Score</span>
                 </div>
               </div>
