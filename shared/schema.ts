@@ -10,6 +10,8 @@ export const profiles = pgTable("profiles", {
   isPro: boolean("is_pro").default(false).notNull(),
   readinessScore: integer("readiness_score").default(0).notNull(),
   pftScore: integer("pft_score").default(0).notNull(),
+  vaultPassword: text("vault_password"),
+  vaultLockEnabled: boolean("vault_lock_enabled").default(false).notNull(),
 });
 
 export const vaultItems = pgTable("vault_items", {

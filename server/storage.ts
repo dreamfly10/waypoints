@@ -40,12 +40,14 @@ export class MemStorage implements IStorage {
     
     this.profile = {
       id: 1,
-      branch: "Army",
-      rank: "SGT",
-      mos: "11B",
+      branch: "Marine Corps",
+      rank: "O-3",
+      mos: "0231",
       isPro: false,
       readinessScore: 40,
       pftScore: 0,
+      vaultPassword: null,
+      vaultLockEnabled: false,
     };
     
     this.seedData();
@@ -134,7 +136,6 @@ export class MemStorage implements IStorage {
 
   async recalculateReadiness(): Promise<void> {
     const items = Array.from(this.vaultItems.values());
-    const oldScore = this.profile.readinessScore;
     let score = 40;
 
     const hasPft = items.some(i => i.type === 'pft');
@@ -154,11 +155,6 @@ export class MemStorage implements IStorage {
 
     const cap = this.profile.isPro ? 100 : 95;
     this.profile.readinessScore = Math.min(score, cap);
-
-    // Enable milestone if crossing 70
-    if (oldScore < 70 && this.profile.readinessScore >= 70) {
-      // For demo, we just rely on the frontend to check the score and show the button
-    }
 
     await this.clearAlerts();
     

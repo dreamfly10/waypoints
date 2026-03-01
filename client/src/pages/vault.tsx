@@ -7,17 +7,17 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { 
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
+  Dialog, 
+  DialogContent, 
+  DialogDescription, 
+  DialogHeader, 
+  DialogTitle, 
   DialogFooter
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { FileText, UploadCloud, ShieldCheck, CheckCircle2, Clock, Trophy } from "lucide-react";
+import { FileText, UploadCloud, ShieldCheck, CheckCircle2, Clock, Trophy, Lock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format, parseISO } from "date-fns";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -37,6 +37,9 @@ export default function Vault() {
   const [type, setType] = useState("");
   const [activeTab, setActiveTab] = useState("all");
 
+  const [unlocked, setUnlocked] = useState(false);
+  const [unlockPassword, setUnlockPassword] = useState("");
+
   const categories = [
     { id: "all", label: "All" },
     { id: "promotion_letter", label: "Promotions" },
@@ -49,6 +52,16 @@ export default function Vault() {
 
   const [showMilestoneModal, setShowMilestoneModal] = useState(false);
   const [thresholdReached, setThresholdReached] = useState<number | null>(null);
+
+  const handleUnlock = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (unlockPassword === profile?.vaultPassword) {
+      setUnlocked(true);
+      toast({ title: "Vault Unlocked" });
+    } else {
+      toast({ title: "Invalid Password", variant: "destructive" });
+    }
+  };
 
   const handleUpload = (e: React.FormEvent) => {
     e.preventDefault();
@@ -103,6 +116,36 @@ export default function Vault() {
     }
     return <Badge className="bg-emerald-500 hover:bg-emerald-600 rounded-full text-[10px] px-2 py-0">Valid</Badge>;
   };
+
+  if (profile?.vaultLockEnabled && !unlocked) {
+    return (
+      <AppLayout>
+        <div className="min-h-[60vh] flex flex-col items-center justify-center p-6 space-y-8 animate-in fade-in duration-500">
+          <div className="w-20 h-20 bg-slate-900 dark:bg-emerald-500 rounded-[32px] flex items-center justify-center shadow-2xl">
+            <Lock className="w-10 h-10 text-white" />
+          </div>
+          <div className="text-center space-y-2">
+            <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Vault Locked</h1>
+            <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">Enter password to access records</p>
+          </div>
+          <form onSubmit={handleUnlock} className="w-full max-w-[280px] space-y-4">
+            <Input 
+              type="password"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              value={unlockPassword}
+              onChange={(e) => setUnlockPassword(e.target.value)}
+              className="h-14 rounded-2xl bg-white dark:bg-slate-900 border-none font-black text-center text-2xl tracking-[1em] shadow-sm"
+              autoFocus
+            />
+            <Button type="submit" className="w-full h-14 rounded-2xl bg-slate-900 dark:bg-emerald-500 text-white font-black uppercase tracking-widest">
+              Unlock Vault
+            </Button>
+          </form>
+        </div>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout>

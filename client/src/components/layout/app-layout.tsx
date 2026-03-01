@@ -20,7 +20,8 @@ import {
   MapPin,
   Trophy
 } from "lucide-react";
-import { useProfile } from "@/hooks/use-profile";
+import { Button } from "@/components/ui/button";
+import { useProfile, useUpdateProfile } from "@/hooks/use-profile";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { 
@@ -31,7 +32,10 @@ import {
   DialogTrigger,
   DialogClose
 } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
 import profilePic from "@assets/Image_20260228224426_45_75_1772336692292.jpg";
+import { useToast } from "@/hooks/use-toast";
 
 const navItems = [
   { title: "Home", url: "/", icon: Home },
@@ -44,7 +48,35 @@ const navItems = [
 export function AppLayout({ children }: { children: ReactNode }) {
   const [location] = useLocation();
   const { data: profile } = useProfile();
+  const { mutate: updateProfile } = useUpdateProfile();
   const [profileOpen, setProfileOpen] = useState(false);
+  const [valuePasswordOpen, setValuePasswordOpen] = useState(false);
+  const [passwordStep, setPasswordStep] = useState<'create' | 'confirm'>('create');
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const { toast } = useToast();
+
+  const handlePasswordSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (passwordStep === 'create') {
+      if (!/^\d+$/.test(newPassword)) {
+        toast({ title: "Invalid Password", description: "Please enter numbers only.", variant: "destructive" });
+        return;
+      }
+      setPasswordStep('confirm');
+    } else {
+      if (newPassword !== confirmPassword) {
+        toast({ title: "Mismatch", description: "Passwords do not match.", variant: "destructive" });
+        return;
+      }
+      updateProfile({ vaultPassword: newPassword, vaultLockEnabled: true });
+      toast({ title: "Security Enabled", description: "Vault password has been set." });
+      setValuePasswordOpen(false);
+      setPasswordStep('create');
+      setNewPassword("");
+      setConfirmPassword("");
+    }
+  };
 
   return (
     <div className="min-h-screen w-full bg-slate-50 dark:bg-black flex justify-center selection:bg-emerald-500/20">
@@ -167,6 +199,62 @@ export function AppLayout({ children }: { children: ReactNode }) {
                     <div className="space-y-3">
                       <h4 className="text-lg font-black text-slate-900 dark:text-white px-1">Customize</h4>
                       <div className="bg-white dark:bg-slate-900 rounded-3xl overflow-hidden shadow-sm divide-y divide-slate-50 dark:divide-slate-800">
+                        <Dialog open={valuePasswordOpen} onOpenChange={setValuePasswordOpen}>
+                          <DialogTrigger asChild>
+                            <button className="w-full p-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                              <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-400">
+                                  <ShieldAlert className="w-4 h-4" />
+                                </div>
+                                <p className="text-sm font-black text-slate-900 dark:text-white">Value Password</p>
+                              </div>
+                              <ChevronRight className="w-4 h-4 text-slate-300" />
+                            </button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-[350px] w-[90vw] rounded-[24px] border-none bg-white dark:bg-slate-900 p-6 shadow-2xl">
+                            <div className="space-y-6">
+                              <div className="flex items-center justify-between">
+                                <div className="space-y-1">
+                                  <h3 className="text-sm font-black uppercase tracking-widest text-slate-900 dark:text-white">Enable Feature</h3>
+                                  <p className="text-[10px] text-slate-400 font-bold">Secure your career vault</p>
+                                </div>
+                                <Switch 
+                                  checked={profile?.vaultLockEnabled} 
+                                  onCheckedChange={(val) => {
+                                    if (val && !profile?.vaultPassword) {
+                                      // Needs initial setup
+                                    } else {
+                                      updateProfile({ vaultLockEnabled: val });
+                                    }
+                                  }}
+                                />
+                              </div>
+
+                              {(!profile?.vaultPassword || passwordStep !== 'create' || valuePasswordOpen) && (
+                                <form onSubmit={handlePasswordSubmit} className="space-y-4">
+                                  <div className="space-y-2">
+                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                                      {passwordStep === 'create' ? 'Enter Numeric Password' : 'Confirm Password'}
+                                    </label>
+                                    <Input 
+                                      type="password"
+                                      inputMode="numeric"
+                                      pattern="[0-9]*"
+                                      value={passwordStep === 'create' ? newPassword : confirmPassword}
+                                      onChange={(e) => passwordStep === 'create' ? setNewPassword(e.target.value) : setConfirmPassword(e.target.value)}
+                                      className="h-12 rounded-xl bg-slate-50 dark:bg-slate-800 border-none font-black text-center text-lg tracking-[1em]"
+                                      autoFocus
+                                    />
+                                  </div>
+                                  <Button type="submit" className="w-full h-12 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-black uppercase tracking-widest">
+                                    {passwordStep === 'create' ? 'Next' : 'Secure Vault'}
+                                  </Button>
+                                </form>
+                              )}
+                            </div>
+                          </DialogContent>
+                        </Dialog>
+
                         <button className="w-full p-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                           <div className="flex items-center gap-3">
                             <div className="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-400">
