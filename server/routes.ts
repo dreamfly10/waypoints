@@ -92,13 +92,16 @@ export async function registerRoutes(
       const isAdvancedRequest = lowerQuery.includes("promotion") || 
                                 lowerQuery.includes("advanced") || 
                                 lowerQuery.includes("strategy") ||
-                                lowerQuery.includes("detailed") ||
-                                lowerQuery.includes("percentile") ||
-                                lowerQuery.includes("benchmarking");
+                                lowerQuery.includes("detailed");
                                 
-      if (isAdvancedRequest && !profile.isPro) {
+      const isBenchmarkingRequest = lowerQuery.includes("percentile") || 
+                                    lowerQuery.includes("benchmarking");
+
+      if ((isAdvancedRequest || isBenchmarkingRequest) && !profile.isPro) {
         return res.status(403).json({ 
-          message: "Detailed career strategy and peer benchmarking require Waypoints Pro.", 
+          message: isBenchmarkingRequest 
+            ? "Peer benchmarking is a Pro feature. Unlock to see how you rank against peers." 
+            : "Detailed career strategy requires Waypoints Pro.", 
           requiresPro: true 
         });
       }
