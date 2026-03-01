@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { AppLayout } from "@/components/layout/app-layout";
 import { useVaultItems, useCreateVaultItem } from "@/hooks/use-vault";
 import { useProfile } from "@/hooks/use-profile";
@@ -17,7 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { FileText, UploadCloud, ShieldCheck, CheckCircle2, Clock } from "lucide-react";
+import { FileText, UploadCloud, ShieldCheck, CheckCircle2, Clock, Trophy } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format, parseISO } from "date-fns";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";

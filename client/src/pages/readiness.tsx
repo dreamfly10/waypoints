@@ -19,7 +19,7 @@ import {
   ChevronDown,
   ChevronUp
 } from "lucide-react";
-import { useState, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -71,6 +71,23 @@ export default function Readiness() {
     const count = Array.from(types).filter(t => ['pft', 'promotion_letter', 'cert', 'orders'].includes(t)).length;
     return Math.round((count / totalRequired) * 100);
   }, [vaultItems]);
+
+  if (profileLoading || alertsLoading) {
+    return (
+      <AppLayout>
+        <div className="space-y-6 p-4">
+          <Skeleton className="h-12 w-3/4 mx-auto" />
+          <div className="flex justify-center py-8">
+            <Skeleton className="h-48 w-48 rounded-full" />
+          </div>
+          <div className="space-y-4">
+            <Skeleton className="h-32 w-full rounded-2xl" />
+            <Skeleton className="h-32 w-full rounded-2xl" />
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout>
@@ -134,7 +151,7 @@ export default function Readiness() {
         </div>
 
         {/* Section Cards */}
-        <div className="grid gap-4">
+        <div className="grid gap-4 px-4">
           
           {/* 1) Documentation Completeness */}
           <Card className="card-ios border-none shadow-sm">

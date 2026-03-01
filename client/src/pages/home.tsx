@@ -9,7 +9,7 @@ import { AlertCircle, CheckCircle2, Info, ChevronRight, Award, Share2, ArrowUpRi
 import { Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 
 export default function Home() {
   const { data: profile, isLoading: profileLoading } = useProfile();
@@ -18,7 +18,7 @@ export default function Home() {
   const { mutate: shareMilestone, isPending: isSharing } = useCreateCommunityPost();
   const { toast } = useToast();
 
-  const prevScoreRef = useRef(profile?.readinessScore);
+  const prevScoreRef = useRef<number | undefined>(profile?.readinessScore);
   const [isScoreUpdating, setIsScoreUpdating] = useState(false);
 
   useEffect(() => {
@@ -68,12 +68,28 @@ export default function Home() {
   const deadlines = alerts?.filter(a => a.dueDate || a.relatedVaultType === 'pft').slice(0, 3) || [];
   const recentMilestones = posts?.filter(p => p.type === 'milestone').slice(0, 2) || [];
 
+  if (profileLoading || alertsLoading || postsLoading) {
+    return (
+      <AppLayout>
+        <div className="space-y-6 p-4">
+          <Skeleton className="h-12 w-3/4" />
+          <Skeleton className="h-48 w-full rounded-3xl" />
+          <div className="space-y-4">
+            <Skeleton className="h-8 w-1/4" />
+            <Skeleton className="h-20 w-full rounded-2xl" />
+            <Skeleton className="h-20 w-full rounded-2xl" />
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
+
   return (
     <AppLayout>
       <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-8">
         
         {/* Greeting Header */}
-        <div className="flex justify-between items-start pt-2">
+        <div className="flex justify-between items-start pt-2 px-4">
           <div>
             <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">
               {getTimeGreeting()}, {profile?.rank || "SGT"}.
@@ -95,60 +111,62 @@ export default function Home() {
         </div>
 
         {/* Readiness Circular Card */}
-        <Card className="card-ios bg-slate-900 dark:bg-emerald-950/20 text-white overflow-hidden relative border-none shadow-xl shadow-emerald-500/10">
-          <div className="absolute right-0 top-0 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none" />
-          <CardContent className="p-8 flex items-center justify-between gap-6">
-            <div className={`relative flex items-center justify-center shrink-0 ${isScoreUpdating ? 'score-pulse' : ''}`}>
-              <svg className="w-32 h-32 transform -rotate-90">
-                <circle
-                  cx="64"
-                  cy="64"
-                  r="58"
-                  stroke="currentColor"
-                  strokeWidth="8"
-                  fill="transparent"
-                  className="text-white/10"
-                />
-                <circle
-                  cx="64"
-                  cy="64"
-                  r="58"
-                  stroke="currentColor"
-                  strokeWidth="8"
-                  fill="transparent"
-                  strokeDasharray={364}
-                  strokeDashoffset={364 - (364 * (profile?.readinessScore || 0)) / 100}
-                  strokeLinecap="round"
-                  className="text-emerald-400 transition-all duration-1000 ease-out"
-                />
-              </svg>
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-3xl font-black">{profile?.readinessScore || 0}</span>
-                <span className="text-[10px] font-black uppercase tracking-widest text-white/50">Score</span>
-              </div>
-            </div>
-            
-            <div className="flex-1 space-y-4">
-              <div>
-                <h3 className="text-xl font-bold leading-tight">Overall Readiness</h3>
-                <div className="flex items-center gap-1.5 mt-1">
-                  <div className="flex items-center text-emerald-400 text-xs font-black">
-                    <ArrowUpRight className="w-3 h-3 mr-0.5" />
-                    +3 THIS WEEK
-                  </div>
+        <div className="px-4">
+          <Card className="card-ios bg-slate-900 dark:bg-emerald-950/20 text-white overflow-hidden relative border-none shadow-xl shadow-emerald-500/10">
+            <div className="absolute right-0 top-0 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none" />
+            <CardContent className="p-8 flex items-center justify-between gap-6">
+              <div className={`relative flex items-center justify-center shrink-0 ${isScoreUpdating ? 'score-pulse' : ''}`}>
+                <svg className="w-32 h-32 transform -rotate-90">
+                  <circle
+                    cx="64"
+                    cy="64"
+                    r="58"
+                    stroke="currentColor"
+                    strokeWidth="8"
+                    fill="transparent"
+                    className="text-white/10"
+                  />
+                  <circle
+                    cx="64"
+                    cy="64"
+                    r="58"
+                    stroke="currentColor"
+                    strokeWidth="8"
+                    fill="transparent"
+                    strokeDasharray={364}
+                    strokeDashoffset={364 - (364 * (profile?.readinessScore || 0)) / 100}
+                    strokeLinecap="round"
+                    className="text-emerald-400 transition-all duration-1000 ease-out"
+                  />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="text-3xl font-black">{profile?.readinessScore || 0}</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-white/50">Score</span>
                 </div>
               </div>
-              <Link href="/readiness">
-                <Button variant="outline" className="w-full h-10 rounded-xl bg-white/10 border-white/10 hover:bg-white/20 text-white text-[10px] font-black uppercase tracking-widest transition-all">
-                  View Details
-                </Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
+              
+              <div className="flex-1 space-y-4">
+                <div>
+                  <h3 className="text-xl font-bold leading-tight">Overall Readiness</h3>
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <div className="flex items-center text-emerald-400 text-xs font-black">
+                      <ArrowUpRight className="w-3 h-3 mr-0.5" />
+                      +3 THIS WEEK
+                    </div>
+                  </div>
+                </div>
+                <Link href="/readiness">
+                  <Button variant="outline" className="w-full h-10 rounded-xl bg-white/10 border-white/10 hover:bg-white/20 text-white text-[10px] font-black uppercase tracking-widest transition-all">
+                    View Details
+                  </Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Action Items Section */}
-        <div className="space-y-4">
+        <div className="space-y-4 px-4">
           <div className="flex items-center justify-between px-1">
             <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">Action Items</h2>
             <Link href="/readiness" className="text-[10px] font-black uppercase tracking-widest text-emerald-500">
@@ -157,9 +175,7 @@ export default function Home() {
           </div>
           
           <div className="grid gap-3">
-            {alertsLoading ? (
-              Array(3).fill(0).map((_, i) => <Skeleton key={i} className="h-20 w-full rounded-3xl" />)
-            ) : actionItems.length === 0 ? (
+            {actionItems.length === 0 ? (
               <div className="p-8 text-center bg-slate-50 dark:bg-slate-900/50 rounded-[32px] border border-dashed border-slate-200 dark:border-slate-800 text-slate-400">
                 <CheckCircle2 className="w-8 h-8 mx-auto mb-3 opacity-20" />
                 <p className="font-bold text-xs">All clear on your end.</p>
@@ -182,33 +198,35 @@ export default function Home() {
         </div>
 
         {/* Upcoming Deadlines */}
-        <Card className="card-ios border-none shadow-sm bg-amber-500/5 dark:bg-amber-500/10">
-          <CardContent className="p-6">
-            <h2 className="text-lg font-bold flex items-center gap-2 mb-4 text-slate-900 dark:text-white">
-              <Calendar className="w-5 h-5 text-amber-500" />
-              Upcoming Deadlines
-            </h2>
-            <div className="space-y-3">
-              {deadlines.length > 0 ? deadlines.map(d => (
-                <div key={d.id} className="flex items-center justify-between text-sm">
-                  <span className="text-slate-600 dark:text-slate-400 font-bold">{d.title}</span>
-                  <span className="text-amber-600 dark:text-amber-400 font-black font-mono text-xs">
-                    {d.dueDate ? format(new Date(d.dueDate), 'MMM d') : d.relatedVaultType === 'pft' ? 'Missing' : 'Pending'}
-                  </span>
+        <div className="px-4">
+          <Card className="card-ios border-none shadow-sm bg-amber-500/5 dark:bg-amber-500/10">
+            <CardContent className="p-6">
+              <h2 className="text-lg font-bold flex items-center gap-2 mb-4 text-slate-900 dark:text-white">
+                <Calendar className="w-5 h-5 text-amber-500" />
+                Upcoming Deadlines
+              </h2>
+              <div className="space-y-3">
+                {deadlines.length > 0 ? deadlines.map(d => (
+                  <div key={d.id} className="flex items-center justify-between text-sm">
+                    <span className="text-slate-600 dark:text-slate-400 font-bold">{d.title}</span>
+                    <span className="text-amber-600 dark:text-amber-400 font-black font-mono text-xs">
+                      {d.dueDate ? format(new Date(d.dueDate), 'MMM d') : d.relatedVaultType === 'pft' ? 'Missing' : 'Pending'}
+                    </span>
+                  </div>
+                )) : (
+                  <p className="text-xs text-slate-400 font-medium">No immediate deadlines.</p>
+                )}
+                <div className="flex items-center justify-between text-sm opacity-60">
+                  <span className="text-slate-600 dark:text-slate-400 font-bold">Board Eligibility</span>
+                  <span className="text-emerald-600 dark:text-emerald-400 font-black font-mono text-xs">OCT 2026</span>
                 </div>
-              )) : (
-                <p className="text-xs text-slate-400 font-medium">No immediate deadlines.</p>
-              )}
-              <div className="flex items-center justify-between text-sm opacity-60">
-                <span className="text-slate-600 dark:text-slate-400 font-bold">Board Eligibility</span>
-                <span className="text-emerald-600 dark:text-emerald-400 font-black font-mono text-xs">OCT 2026</span>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Recent Milestones */}
-        <div className="space-y-4">
+        <div className="space-y-4 px-4">
           <div className="flex items-center justify-between px-1">
             <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">Recent Milestones</h2>
             <Link href="/community" className="text-[10px] font-black uppercase tracking-widest text-emerald-500">
@@ -217,9 +235,7 @@ export default function Home() {
           </div>
           
           <div className="space-y-3">
-            {postsLoading ? (
-              Array(2).fill(0).map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-3xl" />)
-            ) : recentMilestones.length === 0 ? (
+            {recentMilestones.length === 0 ? (
               <p className="text-xs text-slate-400 font-medium px-1 text-center py-4">No recent community milestones.</p>
             ) : recentMilestones.map((post) => (
               <div key={post.id} className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-[24px] border border-slate-100 dark:border-slate-800 flex items-start gap-4">
