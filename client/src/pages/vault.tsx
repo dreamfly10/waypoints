@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { AppLayout } from "@/components/layout/app-layout";
 import { useVaultItems, useCreateVaultItem } from "@/hooks/use-vault";
 import { useProfile } from "@/hooks/use-profile";
+import { useCreateCommunityPost } from "@/hooks/use-community";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -23,10 +24,13 @@ import { format, parseISO } from "date-fns";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { motion, AnimatePresence } from "framer-motion";
 import { Progress } from "@/components/ui/progress";
+import { addMonthsISO, isFutureDate } from "@/lib/dates";
+import { USMC_PROMO_REQS, type EnlistedRank } from "@shared/rules/promotion-requirements";
 
 export default function Vault() {
   const { data: items, isLoading } = useVaultItems();
   const { mutate: upload, isPending } = useCreateVaultItem();
+  const { mutate: createMilestonePost } = useCreateCommunityPost();
   const { data: profile } = useProfile();
   const { toast } = useToast();
   
@@ -44,14 +48,30 @@ export default function Vault() {
     { id: "all", label: "All" },
     { id: "promotion_letter", label: "Promotions" },
     { id: "pft", label: "Fitness" },
+    { id: "pme_cert", label: "PME" },
     { id: "cert", label: "Certs" },
+    { id: "medical_clearance", label: "Medical" },
     { id: "orders", label: "Orders" },
+    { id: "awards", label: "Awards" },
   ];
 
   const filteredItems = items?.filter(item => activeTab === "all" || item.type === activeTab);
 
   const [showMilestoneModal, setShowMilestoneModal] = useState(false);
   const [thresholdReached, setThresholdReached] = useState<number | null>(null);
+
+  const [pftDialogOpen, setPftDialogOpen] = useState(false);
+  const [pftScore, setPftScore] = useState<string>("");
+  const [pftDate, setPftDate] = useState<string>("");
+  const [pftVerified, setPftVerified] = useState<boolean>(false);
+  const [pftError, setPftError] = useState<string | null>(null);
+
+  const [pmeDialogOpen, setPmeDialogOpen] = useState(false);
+  const [pmeCourse, setPmeCourse] = useState<string>("");
+  const [pmeCompletedOn, setPmeCompletedOn] = useState<string>("");
+  const [pmeResult, setPmeResult] = useState<"PASS" | "FAIL">("PASS");
+  const [pmeVerified, setPmeVerified] = useState<boolean>(false);
+  const [pmeError, setPmeError] = useState<string | null>(null);
 
   const handleUnlock = (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,39 +87,233 @@ export default function Vault() {
     e.preventDefault();
     if (!title || !type) return;
 
-    const extractedFields = {
+    const pftScore = type === "pft" ? 285 : undefined;
+    const extractedFields: Record<string, unknown> = {
       confidence: "99.2%",
       verifiedBy: "Waypoints AI Engine",
-      keyMetrics: type === "pft" ? ["Score: 285", "Status: Excellence"] : 
+      keyMetrics: type === "pft" ? ["Score: 285", "Status: Excellence"] :
                   type === "promotion_letter" ? ["Primary Zone", "Rank: SSG"] :
                   ["Authenticated", "Compliant"],
     };
+    if (typeof pftScore === "number") extractedFields.score = pftScore;
 
     upload(
       {
         profileId: 1,
         title,
         type,
-        date: format(new Date(), 'yyyy-MM-dd'),
+        date: format(new Date(), "yyyy-MM-dd"),
         extractedFields,
       },
       {
         onSuccess: (data) => {
           setLastUploaded({ ...data, extractedFields });
           setOpen(false);
-          
-          // Check for threshold
-          const newScore = profile?.readinessScore ? profile.readinessScore + 5 : 5; // Simplified logic for demo
-          if (newScore >= 70 && (!profile?.readinessScore || profile.readinessScore < 70)) {
+          const newScore = profile?.readinessScore ?? 0;
+          if (profile?.readinessStatus === "active" && newScore >= 70 && (!profile?.readinessScore || profile.readinessScore < 70)) {
             setThresholdReached(70);
             setShowMilestoneModal(true);
           } else {
             setOpenSuccess(true);
           }
-          
           setTitle("");
           setType("");
-        }
+        },
+        onError: (err: Error & { message?: string; code?: string }) => {
+          toast({ title: err?.message ?? "Upload failed", variant: "destructive" });
+        },
+      }
+    );
+  };
+
+  const latestPft = items
+    ?.filter((i) => i.type === "pft")
+    .slice()
+    .sort((a, b) => {
+      const aTime = (a as any).uploadTimestamp
+        ? new Date((a as any).uploadTimestamp).getTime()
+        : (() => {
+            try {
+              return parseISO(a.date).getTime();
+            } catch {
+              return 0;
+            }
+          })();
+      const bTime = (b as any).uploadTimestamp
+        ? new Date((b as any).uploadTimestamp).getTime()
+        : (() => {
+            try {
+              return parseISO(b.date).getTime();
+            } catch {
+              return 0;
+            }
+          })();
+      return aTime - bTime;
+    })
+    .at(-1) as any | undefined;
+
+  const requiredPmeCourse = useMemo(() => {
+    const rank = profile?.rank as EnlistedRank | undefined;
+    if (!rank) return "";
+    const req = USMC_PROMO_REQS.find((r) => r.from === rank);
+    return req?.requiresPME ? (req.pmeLabel ?? "PME") : "";
+  }, [profile?.rank]);
+
+  const latestPme = items
+    ?.filter((i) => i.type === "pme_cert")
+    .slice()
+    .sort((a, b) => {
+      const aTime = (a as any).uploadTimestamp
+        ? new Date((a as any).uploadTimestamp).getTime()
+        : (() => {
+            try {
+              return parseISO(a.date).getTime();
+            } catch {
+              return 0;
+            }
+          })();
+      const bTime = (b as any).uploadTimestamp
+        ? new Date((b as any).uploadTimestamp).getTime()
+        : (() => {
+            try {
+              return parseISO(b.date).getTime();
+            } catch {
+              return 0;
+            }
+          })();
+      return aTime - bTime;
+    })
+    .at(-1) as any | undefined;
+
+  const latestPmePassed =
+    typeof (latestPme?.extractedFields as any)?.passed === "boolean"
+      ? Boolean((latestPme.extractedFields as any).passed)
+      : false;
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("pme") === "1") {
+      setPmeDialogOpen(true);
+      if (latestPme) {
+        setPmeCourse(String((latestPme.extractedFields as any)?.course ?? requiredPmeCourse ?? ""));
+        setPmeCompletedOn(latestPme.date ?? "");
+        const passed = (latestPme.extractedFields as any)?.passed;
+        setPmeResult(passed === false ? "FAIL" : "PASS");
+        setPmeVerified(Boolean((latestPme.extractedFields as any)?.verified));
+      } else {
+        setPmeCourse(requiredPmeCourse ?? "");
+        setPmeCompletedOn("");
+        setPmeResult("PASS");
+        setPmeVerified(false);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [requiredPmeCourse, latestPme?.id]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("pft") === "1") {
+      if (latestPft) {
+        const score = (latestPft.extractedFields as any)?.score;
+        setPftScore(typeof score === "number" ? String(score) : "");
+        setPftDate(latestPft.date);
+        setPftVerified(Boolean((latestPft.extractedFields as any)?.verified));
+      } else {
+        setPftScore("");
+        setPftDate("");
+        setPftVerified(false);
+      }
+      setPftError(null);
+      setPftDialogOpen(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [latestPft?.id]);
+
+  const handlePftSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setPftError(null);
+    const scoreNum = parseInt(pftScore, 10);
+    if (Number.isNaN(scoreNum) || scoreNum < 0 || scoreNum > 300) {
+      setPftError("Score must be between 0 and 300.");
+      return;
+    }
+    if (!pftDate) {
+      setPftError("Test date is required.");
+      return;
+    }
+    if (isFutureDate(pftDate)) {
+      setPftError("Test date cannot be in the future.");
+      return;
+    }
+
+    const expiresAt = addMonthsISO(pftDate, 6);
+
+    upload(
+      {
+        profileId: 1,
+        title: "PFT Record",
+        type: "pft",
+        date: pftDate,
+        expiresAt,
+        extractedFields: {
+          score: scoreNum,
+          verified: pftVerified,
+          keyMetrics: [`Score: ${scoreNum}`, `Status: ${pftVerified ? "Verified" : "Unverified"}`],
+        },
+      } as any,
+      {
+        onSuccess: () => {
+          setPftDialogOpen(false);
+          toast({ title: "PFT record saved", description: "Readiness recalculated." });
+        },
+        onError: (err: Error & { message?: string }) => {
+          setPftError(err?.message ?? "Failed to save PFT record.");
+        },
+      }
+    );
+  };
+
+  const handlePmeSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setPmeError(null);
+
+    const course = (pmeCourse || requiredPmeCourse || "").trim();
+    if (!course) {
+      setPmeError("Course is required.");
+      return;
+    }
+    if (!pmeCompletedOn) {
+      setPmeError("Completion date is required.");
+      return;
+    }
+    if (isFutureDate(pmeCompletedOn)) {
+      setPmeError("Completion date cannot be in the future.");
+      return;
+    }
+
+    upload(
+      {
+        profileId: 1,
+        title: `PME: ${course}`,
+        type: "pme_cert",
+        date: pmeCompletedOn,
+        extractedFields: {
+          course,
+          passed: pmeResult === "PASS",
+          verified: pmeVerified,
+          keyMetrics: [`Result: ${pmeResult}`, `Status: ${pmeVerified ? "Verified" : "Unverified"}`],
+        },
+      } as any,
+      {
+        onSuccess: () => {
+          setPmeDialogOpen(false);
+          toast({ title: "PME updated", description: pmeResult === "PASS" ? "Marked complete." : "Saved as incomplete." });
+        },
+        onError: (err: Error & { message?: string }) => {
+          setPmeError(err?.message ?? "Failed to save PME.");
+        },
       }
     );
   };
@@ -161,6 +375,102 @@ export default function Vault() {
               Your official record system
             </p>
           </div>
+
+          {/* PFT Record Quick Card */}
+          <Card className="card-ios border-none shadow-sm bg-slate-50 dark:bg-slate-900/60">
+            <CardContent className="p-4 flex items-center justify-between gap-4">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">
+                  Physical Fitness Test
+                </p>
+                {latestPft ? (
+                  <div>
+                    <p className="text-sm font-black text-slate-900 dark:text-white">
+                      PFT: {(latestPft.extractedFields as any)?.score ?? profile?.pftScore ?? "—"}{" "}
+                      ({format(parseISO(latestPft.date), "MMM d, yyyy")})
+                    </p>
+                    <p className="text-[10px] font-bold text-slate-500 mt-1">
+                      Expires on {format(parseISO(addMonthsISO(latestPft.date, 6)), "MMM d, yyyy")}
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-sm font-bold text-slate-600 dark:text-slate-300">
+                    No PFT record on file.
+                  </p>
+                )}
+              </div>
+              <Button
+                variant="outline"
+                className="rounded-xl text-[10px] font-black uppercase tracking-widest"
+                onClick={() => {
+                  if (latestPft) {
+                    const score = (latestPft.extractedFields as any)?.score;
+                    setPftScore(typeof score === "number" ? String(score) : "");
+                    setPftDate(latestPft.date);
+                    setPftVerified(Boolean((latestPft.extractedFields as any)?.verified));
+                  } else {
+                    setPftScore("");
+                    setPftDate("");
+                    setPftVerified(false);
+                  }
+                  setPftError(null);
+                  setPftDialogOpen(true);
+                }}
+              >
+                {latestPft ? "Edit PFT Record" : "Add PFT Record"}
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* PME Quick Card */}
+          <Card className="card-ios border-none shadow-sm bg-slate-50 dark:bg-slate-900/60">
+            <CardContent className="p-4 flex items-center justify-between gap-4">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">
+                  Professional Military Education
+                </p>
+                {requiredPmeCourse ? (
+                  <div>
+                    <p className="text-sm font-black text-slate-900 dark:text-white">
+                      {latestPmePassed ? "PME: Complete" : "PME: Incomplete"}{" "}
+                      <span className="text-[11px] font-bold text-slate-500">
+                        ({requiredPmeCourse})
+                      </span>
+                    </p>
+                    {latestPme ? (
+                      <p className="text-[10px] font-bold text-slate-500 mt-1">
+                        Last update {format(parseISO(latestPme.date), "MMM d, yyyy")}
+                      </p>
+                    ) : (
+                      <p className="text-[10px] font-bold text-slate-500 mt-1">
+                        No PME record on file.
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-sm font-bold text-slate-600 dark:text-slate-300">
+                    PME not required for your next step.
+                  </p>
+                )}
+              </div>
+              <Button
+                variant="outline"
+                className="rounded-xl text-[10px] font-black uppercase tracking-widest"
+                onClick={() => {
+                  setPmeError(null);
+                  setPmeCourse(String((latestPme?.extractedFields as any)?.course ?? requiredPmeCourse ?? ""));
+                  setPmeCompletedOn(latestPme?.date ?? "");
+                  const passed = (latestPme?.extractedFields as any)?.passed;
+                  setPmeResult(passed === false ? "FAIL" : "PASS");
+                  setPmeVerified(Boolean((latestPme?.extractedFields as any)?.verified));
+                  setPmeDialogOpen(true);
+                }}
+                disabled={!requiredPmeCourse}
+              >
+                {latestPme ? "Edit PME" : "Add PME"}
+              </Button>
+            </CardContent>
+          </Card>
 
           <Button 
             onClick={() => setOpen(true)}
@@ -244,6 +554,154 @@ export default function Vault() {
           </AnimatePresence>
         </div>
 
+        {/* PFT Record Dialog */}
+        <Dialog open={pftDialogOpen} onOpenChange={setPftDialogOpen}>
+          <DialogContent className="rounded-[32px] border-none max-w-[90vw] sm:max-w-[400px] p-8">
+            <DialogHeader className="space-y-2">
+              <DialogTitle className="text-xl font-black text-center">PFT Record</DialogTitle>
+              <DialogDescription className="text-center font-medium">
+                Enter your latest Physical Fitness Test score.
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handlePftSubmit} className="space-y-5 pt-2">
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-black uppercase tracking-widest ml-1 text-slate-400">
+                    PFT Score (0–300)
+                  </Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    max={300}
+                    value={pftScore}
+                    onChange={(e) => setPftScore(e.target.value)}
+                    className="h-12 rounded-xl bg-slate-50 dark:bg-slate-900 border-none font-bold"
+                    required
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-black uppercase tracking-widest ml-1 text-slate-400">
+                    Test Date
+                  </Label>
+                  <Input
+                    type="date"
+                    value={pftDate}
+                    onChange={(e) => setPftDate(e.target.value)}
+                    className="h-12 rounded-xl bg-slate-50 dark:bg-slate-900 border-none font-bold"
+                    required
+                  />
+                </div>
+                <div className="flex items-center justify-between pt-1">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                    Verified (demo)
+                  </span>
+                  <Button
+                    type="button"
+                    variant={pftVerified ? "default" : "outline"}
+                    size="sm"
+                    className="h-7 rounded-full text-[10px] font-black uppercase tracking-widest px-3"
+                    onClick={() => setPftVerified((v) => !v)}
+                  >
+                    {pftVerified ? "Verified" : "Unverified"}
+                  </Button>
+                </div>
+                {pftError && (
+                  <p className="text-[11px] font-bold text-rose-500 mt-1">{pftError}</p>
+                )}
+              </div>
+              <DialogFooter>
+                <Button
+                  type="submit"
+                  disabled={isPending}
+                  className="w-full h-12 rounded-xl bg-slate-900 dark:bg-emerald-500 text-white font-black uppercase tracking-widest shadow-lg"
+                >
+                  {isPending ? "Saving..." : "Save PFT Record"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+
+        {/* PME Dialog (Pass/Fail) */}
+        <Dialog open={pmeDialogOpen} onOpenChange={setPmeDialogOpen}>
+          <DialogContent className="rounded-[32px] border-none max-w-[90vw] sm:max-w-[400px] p-8">
+            <DialogHeader className="space-y-2">
+              <DialogTitle className="text-xl font-black text-center">PME</DialogTitle>
+              <DialogDescription className="text-center font-medium">
+                Mark your PME as pass/fail. Selecting <span className="font-black">Pass</span> marks PME as complete.
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handlePmeSubmit} className="space-y-5 pt-2">
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-black uppercase tracking-widest ml-1 text-slate-400">
+                    Course
+                  </Label>
+                  <Input
+                    value={pmeCourse}
+                    onChange={(e) => setPmeCourse(e.target.value)}
+                    placeholder={requiredPmeCourse ? requiredPmeCourse : "e.g. Corporals Course"}
+                    className="h-12 rounded-xl bg-slate-50 dark:bg-slate-900 border-none font-bold"
+                    required
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-black uppercase tracking-widest ml-1 text-slate-400">
+                    Completion Date
+                  </Label>
+                  <Input
+                    type="date"
+                    value={pmeCompletedOn}
+                    onChange={(e) => setPmeCompletedOn(e.target.value)}
+                    className="h-12 rounded-xl bg-slate-50 dark:bg-slate-900 border-none font-bold"
+                    required
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[10px] font-black uppercase tracking-widest ml-1 text-slate-400">
+                    Result
+                  </Label>
+                  <Select value={pmeResult} onValueChange={(v) => setPmeResult(v as any)}>
+                    <SelectTrigger className="h-12 rounded-xl bg-slate-50 dark:bg-slate-900 border-none font-bold">
+                      <SelectValue placeholder="Select result" />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl border-none shadow-xl">
+                      <SelectItem value="PASS">Pass</SelectItem>
+                      <SelectItem value="FAIL">Fail</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-center justify-between pt-1">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                    Verified (demo)
+                  </span>
+                  <Button
+                    type="button"
+                    variant={pmeVerified ? "default" : "outline"}
+                    size="sm"
+                    className="h-7 rounded-full text-[10px] font-black uppercase tracking-widest px-3"
+                    onClick={() => setPmeVerified((v) => !v)}
+                  >
+                    {pmeVerified ? "Verified" : "Unverified"}
+                  </Button>
+                </div>
+                {pmeError && (
+                  <p className="text-[11px] font-bold text-rose-500 mt-1">{pmeError}</p>
+                )}
+              </div>
+              <DialogFooter>
+                <Button
+                  type="submit"
+                  disabled={isPending}
+                  className="w-full h-12 rounded-xl bg-slate-900 dark:bg-emerald-500 text-white font-black uppercase tracking-widest shadow-lg"
+                >
+                  {isPending ? "Saving..." : "Save PME"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+
         {/* Upload Dialog */}
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogContent className="rounded-[32px] border-none max-w-[90vw] sm:max-w-[400px] p-8">
@@ -277,8 +735,11 @@ export default function Vault() {
                     <SelectContent className="rounded-xl border-none shadow-xl">
                       <SelectItem value="promotion_letter">Promotion Letter</SelectItem>
                       <SelectItem value="pft">Physical Fitness (PFT)</SelectItem>
-                      <SelectItem value="cert">Certification</SelectItem>
-                      <SelectItem value="orders">Orders / Awards</SelectItem>
+                      <SelectItem value="fitness_report">Fitness Report</SelectItem>
+                      <SelectItem value="cert">Training Certification</SelectItem>
+                      <SelectItem value="medical_clearance">Medical Clearance</SelectItem>
+                      <SelectItem value="awards">Awards</SelectItem>
+                      <SelectItem value="orders">Orders</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -310,12 +771,12 @@ export default function Vault() {
                  <div className="absolute right-0 top-0 w-24 h-24 bg-emerald-500/10 rounded-full blur-2xl" />
                  <div className="flex justify-between items-start relative z-10">
                    <div>
-                     <p className="text-[10px] font-black uppercase tracking-widest text-emerald-400 mb-1">{profile?.rank} {profile?.lastName}</p>
+                     <p className="text-[10px] font-black uppercase tracking-widest text-emerald-400 mb-1">{profile?.rank}</p>
                      <h4 className="text-xl font-black">Readiness Level</h4>
-                     <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mt-1">{format(new Date(), 'MMM d, yyyy')}</p>
+                     <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mt-1">{format(new Date(), "MMM d, yyyy")}</p>
                    </div>
                    <div className="text-right">
-                     <span className="text-4xl font-black text-white">{profile?.readinessScore || 70}</span>
+                     <span className="text-4xl font-black text-white">{profile?.readinessScore ?? 70}</span>
                      <p className="text-[10px] font-bold text-emerald-400">▲ +5 PTS</p>
                    </div>
                  </div>
@@ -325,9 +786,30 @@ export default function Vault() {
             <div className="p-6 space-y-3 bg-white dark:bg-slate-950">
               <Button 
                 onClick={() => {
-                   // Mock share to community
-                   toast({ title: "Shared to Community", description: "Your milestone is now live." });
-                   setShowMilestoneModal(false);
+                  createMilestonePost(
+                    {
+                      profileId: 1,
+                      author: profile?.rank ?? "Marine",
+                      content: "Reached 70% readiness!",
+                      type: "milestone",
+                      milestoneCard: {
+                        title: "Readiness Level",
+                        score: profile?.readinessScore ?? 70,
+                        delta: 5,
+                      },
+                      milestoneEventType: "readiness_improved",
+                      privacy: "public",
+                    },
+                    {
+                      onSuccess: () => {
+                        toast({ title: "Shared to Community", description: "Your milestone is now live." });
+                        setShowMilestoneModal(false);
+                      },
+                      onError: (err: Error & { message?: string }) => {
+                        toast({ title: err?.message ?? "Could not share", variant: "destructive" });
+                      },
+                    }
+                  );
                 }}
                 className="w-full h-12 rounded-xl bg-slate-900 dark:bg-emerald-500 text-white font-black uppercase tracking-widest"
               >
@@ -337,7 +819,7 @@ export default function Vault() {
                 variant="outline"
                 className="w-full h-12 rounded-xl border-slate-200 text-slate-900 dark:text-white font-black uppercase tracking-widest text-[10px]"
               >
-                Invite 2 Peers to Unlock Pro Preview
+                Invite 3 Peers to Unlock Pro Preview
               </Button>
               <Button variant="ghost" onClick={() => setShowMilestoneModal(false)} className="w-full text-slate-400 font-bold text-xs">
                 Skip for now

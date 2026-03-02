@@ -1,12 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@shared/routes";
 import { type InsertCommunityPost } from "@shared/schema";
+import { apiFetch } from "@/lib/api";
 
 export function useCommunityPosts() {
   return useQuery({
     queryKey: [api.community.list.path],
     queryFn: async () => {
-      const res = await fetch(api.community.list.path, { credentials: "include" });
+      const res = await apiFetch(api.community.list.path);
       if (!res.ok) throw new Error("Failed to fetch community posts");
       return api.community.list.responses[200].parse(await res.json());
     },
@@ -31,13 +32,15 @@ export function useCreateCommunityPost() {
   return useMutation({
     mutationFn: async (data: InsertCommunityPost) => {
       const validated = api.community.create.input.parse(data);
-      const res = await fetch(api.community.create.path, {
+      const res = await apiFetch(api.community.create.path, {
         method: api.community.create.method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(validated),
-        credentials: "include",
       });
-      if (!res.ok) throw new Error("Failed to create post");
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(typeof body?.message === "string" ? body.message : "Failed to create post");
+      }
       return api.community.create.responses[201].parse(await res.json());
     },
     onSuccess: () => {

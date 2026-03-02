@@ -14,7 +14,9 @@ const ToastViewport = React.forwardRef<
   <ToastPrimitives.Viewport
     ref={ref}
     className={cn(
-      "fixed top-0 z-[100] flex max-h-screen w-full flex-col-reverse p-4 sm:bottom-0 sm:right-0 sm:top-auto sm:flex-col md:max-w-[420px]",
+      // Keep toasts inside the "phone" frame (max 430px) and in the upper-right corner.
+      // We center the viewport to the phone width and right-align the toasts within it.
+      "fixed left-1/2 top-4 z-[100] w-full max-w-[430px] -translate-x-1/2 px-4 flex flex-col items-end gap-2",
       className
     )}
     {...props}

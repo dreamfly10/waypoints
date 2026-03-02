@@ -25,7 +25,7 @@ import { Input } from "@/components/ui/input";
 export default function Community() {
   const { data: posts, isLoading } = useCommunityPosts();
   const { mutate: likePost } = useLikePost();
-  const [activeTab, setActiveTab] = useState("milestones");
+  const [activeTab, setActiveTab] = useState("chats");
   const [filterOpen, setFilterOpen] = useState(false);
 
   const milestones = posts?.filter(p => p.type === 'milestone') || [];
@@ -45,6 +45,8 @@ export default function Community() {
   const channels = [
     { id: 1, name: "MARADMIN Updates", subscribers: "15k", description: "Official Marine Corps Administrative Messages" },
     { id: 2, name: "Army Policy Alerts", subscribers: "12k", description: "Latest HQDA policy changes and ALARACTs" },
+    { id: 3, name: "Discount", subscribers: "8k", description: "Exclusive discounts and deals for service members and veterans" },
+    { id: 4, name: "Military Perks", subscribers: "10k", description: "Benefits, perks, and resources for active duty and veterans" },
   ];
 
   return (
@@ -142,7 +144,9 @@ export default function Community() {
                           </div>
                           <div>
                             <p className="text-sm font-black text-slate-900 dark:text-white leading-tight">{post.author}</p>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{post.date}</p>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                              {post.createdAt ? new Date(post.createdAt).toLocaleDateString() : ""}
+                            </p>
                           </div>
                         </div>
                         <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-none rounded-full text-[9px] font-black uppercase tracking-widest px-2 py-0.5">
@@ -155,21 +159,21 @@ export default function Community() {
                           {post.content}
                         </p>
                         
-                        {post.milestoneCard && (
+                        {post.milestoneCard && typeof post.milestoneCard === "object" && "title" in post.milestoneCard ? (
                           <div className="bg-slate-900 dark:bg-emerald-950/40 rounded-2xl p-4 text-white relative overflow-hidden">
                             <div className="absolute right-0 top-0 w-24 h-24 bg-emerald-500/10 rounded-full blur-2xl" />
                             <div className="relative z-10 flex items-center justify-between">
                               <div>
                                 <p className="text-[10px] font-black uppercase tracking-widest text-emerald-400 mb-1">Combat Readiness</p>
-                                <h4 className="text-xl font-black">{post.milestoneCard.title}</h4>
+                                <h4 className="text-xl font-black">{(post.milestoneCard as { title?: string }).title}</h4>
                               </div>
                               <div className="text-right">
-                                <span className="text-3xl font-black">{post.milestoneCard.score}</span>
-                                <p className="text-[9px] font-bold text-emerald-400/80">+{post.milestoneCard.delta} PTS</p>
+                                <span className="text-3xl font-black">{(post.milestoneCard as { score?: number }).score}</span>
+                                <p className="text-[9px] font-bold text-emerald-400/80">+{(post.milestoneCard as { delta?: number }).delta} PTS</p>
                               </div>
                             </div>
                           </div>
-                        )}
+                        ) : null}
 
                         <div className="flex items-center gap-6 pt-2">
                           <button 
@@ -181,7 +185,7 @@ export default function Community() {
                           </button>
                           <button className="flex items-center gap-1.5 text-slate-400 hover:text-blue-500 transition-colors">
                             <MessageCircle className="w-5 h-5" />
-                            <span className="text-xs font-bold">{post.comments}</span>
+                            <span className="text-xs font-bold">0</span>
                           </button>
                           <button className="flex items-center gap-1.5 text-slate-400 hover:text-emerald-500 transition-colors ml-auto">
                             <Share2 className="w-5 h-5" />

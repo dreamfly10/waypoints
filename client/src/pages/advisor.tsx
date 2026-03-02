@@ -7,7 +7,7 @@ import { PaywallModal } from "@/components/paywall-modal";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
+// ScrollArea removed to keep a single scrollbar for this page
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { 
   Select,
@@ -31,11 +31,17 @@ export default function Advisor() {
   const { mutate: askAdvisor, isPending } = useAdvisorAsk();
   
   const [messages, setMessages] = useState<Message[]>([
-    { id: '1', role: 'advisor', text: 'Reporting for duty. I have access to your PFT scores and vault records. How can I assist with your career progression today?' }
+    { id: '1', role: 'advisor', text: 'Reporting for duty. I have access to your vault records and the latest information. How can I assist you today?' }
   ]);
   const [input, setInput] = useState("");
   const [attachedId, setAttachedId] = useState<string | null>(null);
   const [showPaywall, setShowPaywall] = useState(false);
+  const [localTokensRemaining, setLocalTokensRemaining] = useState<number | null>(null);
+  const FREE_TOKENS = 50;
+  const tokensUsed = (profile as any)?.advisorTokensUsed ?? 0;
+  const profileTokensRemaining = Math.max(0, FREE_TOKENS - tokensUsed);
+  const effectiveTokensRemaining =
+    profile?.isPro ? Infinity : localTokensRemaining ?? profileTokensRemaining;
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const suggestions = [
@@ -45,13 +51,18 @@ export default function Advisor() {
   ];
 
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    const viewport = scrollRef.current;
+    if (viewport && "scrollTop" in viewport) {
+      (viewport as HTMLElement).scrollTop = (viewport as HTMLElement).scrollHeight;
     }
   }, [messages]);
 
   const handleSend = (text: string, attachedVaultItemId?: number) => {
     if (!text.trim() || isPending) return;
+    if (!profile?.isPro && effectiveTokensRemaining !== Infinity && effectiveTokensRemaining <= 0) {
+      setShowPaywall(true);
+      return;
+    }
 
     const userText = text.trim();
     setInput("");
@@ -63,10 +74,20 @@ export default function Advisor() {
     askAdvisor({ query: userText, attachedVaultItemId }, {
       onSuccess: (data) => {
         setMessages(prev => [...prev, { id: Date.now().toString(), role: 'advisor', text: data.response }]);
+        if (typeof data.tokensRemaining === "number") {
+          setLocalTokensRemaining(data.tokensRemaining);
+        } else if (!profile?.isPro) {
+          setLocalTokensRemaining((prev) =>
+            prev == null ? profileTokensRemaining - 1 : Math.max(0, prev - 1)
+          );
+        }
       },
       onError: (err: any) => {
         // Handle both class-based and object-based error responses
         if (err instanceof AdvisorProRequiredError || err?.requiresPro || (err?.message && err.message.includes('Pro'))) {
+          if (err instanceof AdvisorProRequiredError && typeof err.tokensRemaining === "number") {
+            setLocalTokensRemaining(err.tokensRemaining);
+          }
           setShowPaywall(true);
         } else {
           setMessages(prev => [...prev, { id: Date.now().toString(), role: 'advisor', text: 'Error connecting to tactical network. Try again.' }]);
@@ -79,7 +100,7 @@ export default function Advisor() {
 
   return (
     <AppLayout>
-      <div className="h-[calc(100vh-5rem)] flex flex-col animate-in fade-in duration-700">
+      <div className="space-y-4 pb-2">
         
         {/* Context Banner */}
         <Card className="mx-4 mt-2 mb-4 bg-slate-900 dark:bg-emerald-950/20 text-white border-none shadow-lg overflow-hidden relative rounded-2xl">
@@ -90,10 +111,30 @@ export default function Advisor() {
                 <Bot className="w-6 h-6 text-emerald-400" />
               </div>
               <div>
-                <h2 className="text-sm font-black uppercase tracking-widest leading-tight">
-                  {profile?.rank} {profile?.lastName || "SGT"}
-                </h2>
-                <p className="text-[10px] font-bold text-emerald-400/80 uppercase tracking-widest">MOS: {profile?.mos || "11B"}</p>
+                <p className="text-[10px] font-bold text-emerald-400/80 uppercase tracking-widest mb-1">
+                  Token Usage
+                </p>
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 h-2 rounded-full bg-emerald-900/60 overflow-hidden">
+                    <div
+                      className="h-full bg-emerald-400 rounded-full transition-all"
+                      style={{
+                        width:
+                          profile?.isPro || effectiveTokensRemaining === Infinity
+                            ? "100%"
+                            : `${((FREE_TOKENS - (effectiveTokensRemaining as number)) / FREE_TOKENS) * 100}%`,
+                      }}
+                    />
+                  </div>
+                  <span className="text-[10px] font-bold text-emerald-100 whitespace-nowrap">
+                    {profile?.isPro || effectiveTokensRemaining === Infinity
+                      ? "Pro user"
+                      : `${FREE_TOKENS - (effectiveTokensRemaining as number)} / ${FREE_TOKENS}`}
+                  </span>
+                </div>
+                <span className="inline-flex mt-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest border border-emerald-400/60 text-emerald-100 bg-emerald-500/10">
+                  {profile?.isPro ? "Pro user" : "Free user"}
+                </span>
               </div>
             </div>
             <div className="text-right">
@@ -107,9 +148,8 @@ export default function Advisor() {
         </Card>
 
         {/* Chat Interface */}
-        <div className="flex-1 flex flex-col min-h-0 bg-slate-50 dark:bg-slate-900/50 rounded-t-[32px] shadow-inner">
-          <ScrollArea className="flex-1" ref={scrollRef}>
-            <div className="space-y-6 p-6 pb-32">
+        <div className="bg-slate-50 dark:bg-slate-900/50 rounded-t-[32px] shadow-inner mx-0">
+          <div className="space-y-6 p-6 pb-24" ref={scrollRef}>
               {messages.map((msg) => (
                 <motion.div 
                   initial={{ opacity: 0, y: 10 }}
@@ -148,70 +188,65 @@ export default function Advisor() {
                 </div>
               )}
             </div>
-          </ScrollArea>
-          
-          {/* Bottom Input Area */}
-          <div className="fixed bottom-24 left-1/2 -translate-x-1/2 w-full max-w-[430px] px-4">
-            <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-[28px] p-3 shadow-2xl border border-slate-100 dark:border-slate-800/50 space-y-3">
-              
-              {/* Suggestions */}
-              {messages.length === 1 && !isPending && (
-                <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
-                  {suggestions.map((s) => (
-                    <Button 
-                      key={s.label} 
-                      variant="outline" 
-                      className="rounded-full h-8 px-4 text-[10px] font-black uppercase tracking-widest bg-slate-50 dark:bg-slate-800 border-none hover:bg-emerald-500 hover:text-white transition-all shrink-0"
-                      onClick={() => handleSend(s.query)}
-                    >
-                      {s.label}
-                    </Button>
-                  ))}
-                </div>
-              )}
+          </div>
+        </div>
 
-              {attachedItem && (
-                <div className="flex items-center gap-2 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 rounded-xl px-3 py-2 w-fit animate-in slide-in-from-bottom-2">
-                  <Paperclip className="w-3.5 h-3.5 text-emerald-500" />
-                  <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest truncate max-w-[150px]">{attachedItem.title}</span>
-                  <Button variant="ghost" size="icon" className="h-5 w-5 hover:bg-emerald-500/20 text-emerald-500" onClick={() => setAttachedId(null)}>
-                    <X className="w-3 h-3" />
-                  </Button>
-                </div>
-              )}
-              
-              <form onSubmit={(e) => { e.preventDefault(); handleSend(input, attachedId ? parseInt(attachedId) : undefined); }} className="flex items-center gap-2">
-                <Select value={attachedId || "none"} onValueChange={(val) => setAttachedId(val === "none" ? null : val)}>
-                  <SelectTrigger className="w-11 h-11 p-0 flex items-center justify-center rounded-2xl bg-slate-50 dark:bg-slate-800 border-none shadow-sm shrink-0">
-                    <Paperclip className={`w-5 h-5 ${attachedId ? 'text-emerald-500' : 'text-slate-400'}`} />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-2xl border-none shadow-2xl">
-                    <SelectItem value="none">No attachment</SelectItem>
-                    {vaultItems?.map(item => (
-                      <SelectItem key={item.id} value={item.id.toString()}>{item.title}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                <div className="relative flex-1">
-                  <Input 
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    placeholder="Ask Waypoints Advisor..." 
-                    className="h-11 rounded-2xl bg-slate-50 dark:bg-slate-800 border-none focus-visible:ring-emerald-500 text-sm font-medium"
-                    disabled={isPending}
-                  />
-                  <Button 
-                    type="submit" 
-                    size="icon" 
-                    className="absolute right-1 top-1 h-9 w-9 rounded-xl bg-slate-900 dark:bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg transition-all active:scale-95"
-                    disabled={(!input.trim() && !attachedId) || isPending}
+        {/* Sticky input bar directly above bottom tabs */}
+        <div className="sticky bottom-0 z-20 px-4 pb-2 pt-1 bg-gradient-to-t from-white dark:from-slate-950 via-white/80 dark:via-slate-950/80">
+          <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-[28px] p-3 shadow-lg border border-slate-100 dark:border-slate-800/50 space-y-3">
+            {messages.length === 1 && !isPending && (
+              <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+                {suggestions.map((s) => (
+                  <Button
+                    key={s.label}
+                    variant="outline"
+                    className="rounded-full h-8 px-4 text-[10px] font-black uppercase tracking-widest bg-slate-50 dark:bg-slate-800 border-none hover:bg-emerald-500 hover:text-white transition-all shrink-0"
+                    onClick={() => handleSend(s.query)}
                   >
-                    <Send className="w-4 h-4" />
+                    {s.label}
                   </Button>
-                </div>
-              </form>
-            </div>
+                ))}
+              </div>
+            )}
+            {attachedItem && (
+              <div className="flex items-center gap-2 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 rounded-xl px-3 py-2 w-fit animate-in slide-in-from-bottom-2">
+                <Paperclip className="w-3.5 h-3.5 text-emerald-500" />
+                <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-widest truncate max-w-[150px]">{attachedItem.title}</span>
+                <Button variant="ghost" size="icon" className="h-5 w-5 hover:bg-emerald-500/20 text-emerald-500" onClick={() => setAttachedId(null)}>
+                  <X className="w-3 h-3" />
+                </Button>
+              </div>
+            )}
+            <form onSubmit={(e) => { e.preventDefault(); handleSend(input, attachedId ? parseInt(attachedId) : undefined); }} className="flex items-center gap-2">
+              <Select value={attachedId || "none"} onValueChange={(val) => setAttachedId(val === "none" ? null : val)}>
+                <SelectTrigger className="w-11 h-11 p-0 flex items-center justify-center rounded-2xl bg-slate-50 dark:bg-slate-800 border-none shadow-sm shrink-0">
+                  <Paperclip className={`w-5 h-5 ${attachedId ? "text-emerald-500" : "text-slate-400"}`} />
+                </SelectTrigger>
+                <SelectContent className="rounded-2xl border-none shadow-2xl">
+                  <SelectItem value="none">No attachment</SelectItem>
+                  {vaultItems?.map((item) => (
+                    <SelectItem key={item.id} value={item.id.toString()}>{item.title}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <div className="relative flex-1">
+                <Input
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder="Ask Waypoints Advisor..."
+                  className="h-11 rounded-2xl bg-slate-50 dark:bg-slate-800 border-none focus-visible:ring-emerald-500 text-sm font-medium"
+                  disabled={isPending}
+                />
+                <Button
+                  type="submit"
+                  size="icon"
+                  className="absolute right-1 top-1 h-9 w-9 rounded-xl bg-slate-900 dark:bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg transition-all active:scale-95"
+                  disabled={(!input.trim() && !attachedId) || isPending}
+                >
+                  <Send className="w-4 h-4" />
+                </Button>
+              </div>
+            </form>
           </div>
         </div>
 

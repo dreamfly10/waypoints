@@ -61,6 +61,63 @@ export const api = {
       responses: {
         200: z.array(z.custom<typeof alerts.$inferSelect>()),
       }
+    },
+    resolve: {
+      method: 'POST' as const,
+      path: '/api/alerts/resolve' as const,
+      input: z.object({ alertId: z.number() }),
+      responses: {
+        200: z.custom<typeof alerts.$inferSelect>(),
+        404: errorSchemas.notFound,
+        400: errorSchemas.validation,
+      }
+    }
+  },
+  readiness: {
+    check: {
+      method: 'POST' as const,
+      path: '/api/readiness/check' as const,
+      responses: {
+        200: z.object({ ok: z.boolean() }),
+      }
+    },
+    get: {
+      method: 'GET' as const,
+      path: '/api/readiness' as const,
+      responses: {
+        200: z.object({
+          tier: z.string(),
+          score: z.number(),
+          rawTotal: z.number(),
+          scorePreCap: z.number(),
+          delta: z.number().optional(),
+          capApplied: z.object({
+            capValue: z.number(),
+            reasons: z.array(z.string()),
+          }).nullable(),
+          breakdown: z.object({
+            documentation: z.object({ pointsEarned: z.number(), pointsMax: z.number() }),
+            fitness: z.object({ pointsEarned: z.number(), pointsMax: z.number() }),
+            eligibility: z.object({ pointsEarned: z.number(), pointsMax: z.number() }),
+            admin: z.object({ pointsEarned: z.number(), pointsMax: z.number() }),
+          }),
+          explanation: z.array(z.string()),
+          components: z.array(z.object({
+            key: z.string(),
+            label: z.string(),
+            weight: z.number(),
+            rawValue: z.union([z.number(), z.string()]).optional(),
+            normalized: z.number(),
+            weighted: z.number(),
+            status: z.string(),
+            notes: z.array(z.string()).optional(),
+            suggestedActions: z.array(z.string()).optional(),
+          })),
+          missingCritical: z.array(z.string()),
+          nextBestActions: z.array(z.string()),
+        }).nullable(),
+        404: errorSchemas.notFound,
+      }
     }
   },
   community: {
@@ -92,9 +149,10 @@ export const api = {
       responses: {
         200: z.object({ 
           response: z.string(),
-          suggestions: z.array(z.string()).optional()
+          suggestions: z.array(z.string()).optional(),
+          tokensRemaining: z.number().optional(),
         }),
-        403: z.object({ message: z.string(), requiresPro: z.boolean() }),
+        403: z.object({ message: z.string(), requiresPro: z.boolean(), tokensRemaining: z.number().optional() }),
         400: errorSchemas.validation,
       }
     }

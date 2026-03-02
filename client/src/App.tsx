@@ -4,6 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AnimatePresence, motion } from "framer-motion";
+import { AuthProvider } from "@/contexts/AuthContext";
 import NotFound from "@/pages/not-found";
 
 // Pages
@@ -12,6 +13,8 @@ import Vault from "./pages/vault";
 import Readiness from "./pages/readiness";
 import Advisor from "./pages/advisor";
 import Community from "./pages/community";
+import Login from "./pages/login";
+import Finance from "./pages/finance";
 
 function Router() {
   const [location] = useLocation();
@@ -30,6 +33,7 @@ function Router() {
           <Route path="/" component={Home} />
           <Route path="/vault" component={Vault} />
           <Route path="/readiness" component={Readiness} />
+          <Route path="/finance" component={Finance} />
           <Route path="/advisor" component={Advisor} />
           <Route path="/community" component={Community} />
           <Route component={NotFound} />
@@ -42,10 +46,12 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Router />
-      </TooltipProvider>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Router />
+        </TooltipProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }
