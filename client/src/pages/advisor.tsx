@@ -37,7 +37,7 @@ export default function Advisor() {
   const [attachedId, setAttachedId] = useState<string | null>(null);
   const [showPaywall, setShowPaywall] = useState(false);
   const [localTokensRemaining, setLocalTokensRemaining] = useState<number | null>(null);
-  const FREE_TOKENS = 50;
+  const FREE_TOKENS = 1;
   const tokensUsed = (profile as any)?.advisorTokensUsed ?? 0;
   const profileTokensRemaining = Math.max(0, FREE_TOKENS - tokensUsed);
   const effectiveTokensRemaining =
@@ -149,7 +149,7 @@ export default function Advisor() {
 
         {/* Chat Interface */}
         <div className="bg-slate-50 dark:bg-slate-900/50 rounded-t-[32px] shadow-inner mx-0">
-          <div className="space-y-6 p-6 pb-24" ref={scrollRef}>
+          <div className="space-y-6 p-6 pb-16" ref={scrollRef}>
               {messages.map((msg) => (
                 <motion.div 
                   initial={{ opacity: 0, y: 10 }}
@@ -189,13 +189,12 @@ export default function Advisor() {
               )}
             </div>
           </div>
-        </div>
 
         {/* Sticky input bar directly above bottom tabs */}
-        <div className="sticky bottom-0 z-20 px-4 pb-2 pt-1 bg-gradient-to-t from-white dark:from-slate-950 via-white/80 dark:via-slate-950/80">
-          <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-[28px] p-3 shadow-lg border border-slate-100 dark:border-slate-800/50 space-y-3">
+        <div className="sticky bottom-0 z-20 px-4 pt-0 bg-gradient-to-t from-white dark:from-slate-950 via-white/80 dark:via-slate-950/80">
+          <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-[28px] p-2 shadow-lg border border-slate-100 dark:border-slate-800/50 space-y-2">
             {messages.length === 1 && !isPending && (
-              <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+              <div className="flex gap-2 overflow-x-auto no-scrollbar">
                 {suggestions.map((s) => (
                   <Button
                     key={s.label}

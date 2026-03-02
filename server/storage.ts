@@ -338,16 +338,15 @@ export class MemStorage implements IStorage {
   async recalculateReadiness(profileId?: number): Promise<void> {
     const pid = profileId ?? this.profile.id;
     const items = Array.from(this.vaultItems.values()).filter((i) => i.profileId === pid);
+    const userState = mapToUserState(this.profile, items);
 
     if (!isVaultActivated(items)) {
       this.profile.readinessScore = 0;
       this.profile.readinessStatus = "incomplete";
       this.lastReadinessResult = null;
-      return;
-    }
-
+      // Fall through to create alerts so Action Items show full list from first load
+    } else {
     this.profile.readinessStatus = "active";
-    const userState = mapToUserState(this.profile, items);
     const previous = this.lastReadinessResult;
     const result = computeReadiness(userState, undefined, previous ?? undefined);
 
@@ -411,6 +410,7 @@ export class MemStorage implements IStorage {
 
     this.lastReadinessResult = result;
     this.profile.readinessScore = Math.min(result.score, 100);
+    }
 
     await this.clearAlerts(pid);
     const now = new Date();

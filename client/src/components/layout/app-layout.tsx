@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useMemo, useState } from "react";
+import { ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "wouter";
 import {
   Home,
@@ -34,6 +34,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { 
   Dialog, 
   DialogContent, 
+  DialogDescription,
   DialogHeader, 
   DialogTitle,
   DialogTrigger,
@@ -46,6 +47,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { api } from "@shared/routes";
 import { apiFetch } from "@/lib/api";
+import { PaywallModal } from "@/components/paywall-modal";
 
 type NotificationSeverity = "info" | "success" | "warning" | "critical";
 type NotificationSource = "vault" | "readiness" | "community" | "advisor" | "system";
@@ -127,6 +129,44 @@ export function AppLayout({ children }: { children: ReactNode }) {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const { toast } = useToast();
+
+  const prevReadinessScoreRef = useRef<number | undefined>(undefined);
+  const [milestoneDialogOpen, setMilestoneDialogOpen] = useState(false);
+  const [milestoneDialogLevel, setMilestoneDialogLevel] = useState<80 | 90 | null>(null);
+  const [paywallOpen, setPaywallOpen] = useState(false);
+
+  useEffect(() => {
+    const currentScore = profile?.readinessScore ?? 0;
+    const prevScore = prevReadinessScoreRef.current;
+    if (profile?.readinessStatus === "incomplete" || profile?.readinessScore == null) return;
+    const storageKey = "wp_readiness_milestones_shown";
+    let shown: Record<string, boolean> = {};
+    try {
+      const raw = localStorage.getItem(storageKey);
+      if (raw) shown = JSON.parse(raw);
+    } catch {
+      shown = {};
+    }
+    let crossed: 80 | 90 | null = null;
+    // Show on first load (no prevScore) as long as the threshold hasn't been shown yet.
+    if (currentScore >= 90 && !shown["90"] && (prevScore === undefined || prevScore < 90)) crossed = 90;
+    else if (currentScore >= 80 && !shown["80"] && (prevScore === undefined || prevScore < 80)) crossed = 80;
+    if (crossed) {
+      setMilestoneDialogLevel(crossed);
+      setMilestoneDialogOpen(true);
+      shown[String(crossed)] = true;
+      // If you hit 90+, consider 80 shown too to avoid a second popup later.
+      if (crossed === 90) shown["80"] = true;
+      try {
+        localStorage.setItem(storageKey, JSON.stringify(shown));
+      } catch {
+        // ignore
+      }
+    }
+    if (profile?.readinessScore !== undefined) {
+      prevReadinessScoreRef.current = profile.readinessScore;
+    }
+  }, [profile?.readinessScore, profile?.readinessStatus]);
 
   const notifications: NotificationItem[] = useMemo(() => {
     const state = notifState;
@@ -294,6 +334,15 @@ export function AppLayout({ children }: { children: ReactNode }) {
           <div className="flex items-center gap-3">
             {profile?.isPro && (
               <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 border-emerald-500/20 text-[10px] uppercase font-black px-2 py-0.5 rounded-full">PRO</Badge>
+            )}
+            {!profile?.isPro && (
+              <button
+                type="button"
+                onClick={() => setPaywallOpen(true)}
+                className="text-[10px] font-black uppercase tracking-widest text-emerald-500 hover:text-emerald-600 dark:hover:text-emerald-400 px-2 py-1 rounded-full border border-emerald-500/40 hover:bg-emerald-500/10 transition-colors"
+              >
+                Get Pro
+              </button>
             )}
             <Popover
               open={notificationOpen}
@@ -900,6 +949,56 @@ export function AppLayout({ children }: { children: ReactNode }) {
             );
           })}
         </nav>
+
+        {/* Global readiness milestone popup (80+ / 90+) — Instagram shareable */}
+        <Dialog open={milestoneDialogOpen} onOpenChange={setMilestoneDialogOpen}>
+          <DialogContent className="rounded-[32px] border-none max-w-[90vw] sm:max-w-[400px] p-0 overflow-hidden bg-slate-900 text-white">
+            <div className="relative p-8 text-center">
+              <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/40 via-slate-900 to-slate-950 opacity-80" />
+              <div className="relative z-10 space-y-4">
+                <div className="w-20 h-20 mx-auto rounded-full bg-emerald-500/20 flex items-center justify-center">
+                  <Trophy className="w-10 h-10 text-emerald-300" />
+                </div>
+                <DialogHeader className="space-y-1">
+                  <DialogTitle className="text-2xl font-black text-white">
+                    {milestoneDialogLevel === 90
+                      ? "Elite Readiness"
+                      : "Excellent Readiness"}
+                  </DialogTitle>
+                  <DialogDescription className="text-emerald-100 text-sm font-bold">
+                    Your readiness just crossed {milestoneDialogLevel}% — keep pressing, Marine.
+                  </DialogDescription>
+                </DialogHeader>
+                <p className="text-xs font-bold text-emerald-100/80 uppercase tracking-widest">
+                  Current score: {profile?.readinessScore ?? 0}
+                </p>
+                {milestoneDialogLevel !== null && (profile?.readinessScore ?? 0) >= 80 && (
+                  <>
+                    <div className="mt-4 space-y-2 text-left bg-slate-900/60 border border-emerald-500/30 rounded-2xl p-4">
+                      <p className="text-[11px] font-black uppercase tracking-widest text-emerald-300 mb-1">
+                        Instagram-ready shoutout
+                      </p>
+                      <p className="text-xs font-medium text-emerald-50 leading-relaxed">
+                        Screenshot this and share:{" "}
+                        <span className="font-semibold">
+                          &quot;Just hit {profile?.readinessScore ?? 0}% readiness in Waypoints. Training, PME, and finances on lock — who&apos;s joining me?&quot;
+                        </span>
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      className="mt-3 w-full h-11 rounded-2xl border border-emerald-400/80 bg-transparent text-[10px] font-black uppercase tracking-widest text-emerald-100 shadow-sm"
+                    >
+                      Share to Instagram
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        <PaywallModal open={paywallOpen} onOpenChange={setPaywallOpen} />
       </div>
     </div>
   );

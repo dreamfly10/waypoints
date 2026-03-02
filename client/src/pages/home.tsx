@@ -309,67 +309,86 @@ export default function Home() {
               </div>
             ) : (
               actionItems.map((item) => (
-                <div key={String(item.id)} className="p-4 bg-white dark:bg-slate-900 rounded-[24px] border border-slate-100 dark:border-slate-800 flex items-center gap-4 shadow-sm">
-                  <div className={`w-2 h-10 rounded-full shrink-0 ${item.severity === "high" ? "bg-rose-500" : item.severity === "medium" ? "bg-amber-500" : "bg-slate-400"}`} />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-sm text-slate-900 dark:text-slate-100 truncate">{item.title}</p>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                      {"message" in item ? item.message : "Tactical requirement"}
-                    </p>
+                  <div
+                    key={String(item.id)}
+                    className="p-4 bg-white dark:bg-slate-900 rounded-[24px] border border-slate-100 dark:border-slate-800 flex items-center gap-4 shadow-sm"
+                  >
+                    <div
+                      className={`w-2 h-10 rounded-full shrink-0 ${
+                        item.severity === "high"
+                          ? "bg-rose-500"
+                          : item.severity === "medium"
+                            ? "bg-amber-500"
+                            : "bg-slate-400"
+                      }`}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-sm text-slate-900 dark:text-slate-100 truncate">
+                        {item.title}
+                      </p>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                        {"message" in item ? item.message : "Tactical requirement"}
+                      </p>
+                    </div>
+                    <div className="flex flex-col items-end gap-1">
+                      {item.actionType === "complete" ? (
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          className="h-8 rounded-lg text-[10px] font-black uppercase px-3 tracking-widest"
+                          onClick={() => {
+                            setProfileSetupOpen(true);
+                          }}
+                        >
+                          Complete
+                        </Button>
+                      ) : item.relatedVaultType === "pme_cert" ? (
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          className="h-8 rounded-lg text-[10px] font-black uppercase px-3 tracking-widest"
+                          onClick={() => {
+                            setLocation("/vault?pme=1");
+                          }}
+                        >
+                          Edit PME
+                        </Button>
+                      ) : item.relatedVaultType === "pft" ? (
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          className="h-8 rounded-lg text-[10px] font-black uppercase px-3 tracking-widest"
+                          onClick={() => {
+                            setLocation("/vault?pft=1");
+                          }}
+                        >
+                          Edit PFT
+                        </Button>
+                      ) : item.actionType === "upload" || item.actionType === "renew" ? (
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          className="h-8 rounded-lg text-[10px] font-black uppercase px-3 tracking-widest"
+                          onClick={() => {
+                            setUploadType((item.relatedVaultType as string) ?? "");
+                            setUploadTitle("");
+                            setUploadOpen(true);
+                          }}
+                        >
+                          Upload
+                        </Button>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          className="h-8 rounded-lg text-[10px] font-black uppercase px-3 tracking-widest"
+                        >
+                          Resolve
+                        </Button>
+                      )}
+                    </div>
                   </div>
-                  {item.actionType === "complete" ? (
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      className="h-8 rounded-lg text-[10px] font-black uppercase px-3 tracking-widest"
-                      onClick={() => {
-                        setProfileSetupOpen(true);
-                      }}
-                    >
-                      Complete
-                    </Button>
-                  ) : item.relatedVaultType === "pme_cert" ? (
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      className="h-8 rounded-lg text-[10px] font-black uppercase px-3 tracking-widest"
-                      onClick={() => {
-                        setLocation("/vault?pme=1");
-                      }}
-                    >
-                      Edit PME
-                    </Button>
-                  ) : item.relatedVaultType === "pft" ? (
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      className="h-8 rounded-lg text-[10px] font-black uppercase px-3 tracking-widest"
-                      onClick={() => {
-                        setLocation("/vault?pft=1");
-                      }}
-                    >
-                      Edit PFT
-                    </Button>
-                  ) : item.actionType === "upload" || item.actionType === "renew" ? (
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      className="h-8 rounded-lg text-[10px] font-black uppercase px-3 tracking-widest"
-                      onClick={() => {
-                        setUploadType((item.relatedVaultType as string) ?? "");
-                        setUploadTitle("");
-                        setUploadOpen(true);
-                      }}
-                    >
-                      Upload
-                    </Button>
-                  ) : (
-                    <Button size="sm" variant="secondary" className="h-8 rounded-lg text-[10px] font-black uppercase px-3 tracking-widest">
-                      Resolve
-                    </Button>
-                  )}
-                </div>
-              ))
+                ))
             )}
           </div>
         </div>

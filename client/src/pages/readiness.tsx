@@ -86,8 +86,9 @@ export default function Readiness() {
     }
 
     let crossed: 70 | 80 | 90 | null = null;
+    // Prefer higher milestone if multiple are satisfied.
     for (const t of thresholds) {
-      if (previousScore < t && currentScore >= t && !shown[String(t)]) {
+      if (currentScore >= t && !shown[String(t)] && (delta === 0 || previousScore < t)) {
         crossed = t;
       }
     }
@@ -96,6 +97,7 @@ export default function Readiness() {
       setMilestoneLevel(crossed);
       setMilestoneOpen(true);
       shown[String(crossed)] = true;
+      if (crossed === 90) shown["80"] = true;
       try {
         localStorage.setItem(storageKey, JSON.stringify(shown));
       } catch {
@@ -487,7 +489,7 @@ export default function Readiness() {
                   Current score: {currentScore}
                 </p>
 
-                {milestoneLevel !== null && currentScore >= 90 && (
+                {milestoneLevel !== null && currentScore >= 80 && (
                   <>
                     <div className="mt-4 space-y-2 text-left bg-slate-900/60 border border-emerald-500/30 rounded-2xl p-4">
                       <p className="text-[11px] font-black uppercase tracking-widest text-emerald-300 mb-1">

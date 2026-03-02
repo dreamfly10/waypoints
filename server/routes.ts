@@ -65,7 +65,11 @@ export async function registerRoutes(
   // Alerts
   app.get(api.alerts.list.path, async (req, res) => {
     const includeResolved = req.query.includeResolved === 'true';
-    const alerts = await storage.getAlerts(undefined, { includeResolved });
+    let alerts = await storage.getAlerts(undefined, { includeResolved });
+    if (alerts.length === 0) {
+      await storage.recalculateReadiness(1);
+      alerts = await storage.getAlerts(undefined, { includeResolved });
+    }
     res.json(alerts);
   });
 
