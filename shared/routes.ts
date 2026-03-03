@@ -138,6 +138,15 @@ export const api = {
       }
     }
   },
+  demo: {
+    reset: {
+      method: 'POST' as const,
+      path: '/api/demo/reset' as const,
+      responses: {
+        200: z.object({ ok: z.boolean() }),
+      },
+    },
+  },
   advisor: {
     ask: {
       method: 'POST' as const,

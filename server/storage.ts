@@ -50,6 +50,8 @@ export interface IStorage {
   recordReadinessCheck(profileId?: number): Promise<void>;
   /** Full readiness result (tier, components, nextBestActions) for UI explainability */
   getReadinessResult(profileId?: number): Promise<ReadinessResult | null>;
+  /** Reset all data to initial demo state (profile, vault, alerts, community). */
+  resetToInitialDemoState(): Promise<void>;
 }
 
 const ALERT_PRIORITY_ORDER = ["medical_clearance", "pft", "cert", "promotion_letter", "orders"] as const;
@@ -603,6 +605,43 @@ export class MemStorage implements IStorage {
     const result = computeReadiness(userState, undefined, this.lastReadinessResult ?? undefined);
     this.lastReadinessResult = result;
     return result;
+  }
+
+  async resetToInitialDemoState(): Promise<void> {
+    this.vaultItems.clear();
+    this.alerts.clear();
+    this.communityPosts.clear();
+    this.milestones = [];
+    this.vaultIdCounter = 1;
+    this.alertIdCounter = 1;
+    this.postIdCounter = 1;
+    this.milestoneIdCounter = 1;
+    this.lastReadinessResult = null;
+
+    this.profile = {
+      id: 1,
+      firstName: null,
+      lastName: null,
+      avatarUrl: null,
+      branch: "Marine Corps",
+      rank: "E5",
+      mos: "0231",
+      isPro: false,
+      readinessScore: 0,
+      readinessStatus: "incomplete",
+      pftScore: 0,
+      vaultPassword: null,
+      vaultLockEnabled: false,
+      tisMonths: 60,
+      tigMonths: 18,
+      dateOfBirth: null,
+      medicalClearanceExpiresAt: null,
+      pmeComplete: false,
+      lastReadinessCheckAt: null,
+      advisorTokensUsed: 0,
+    };
+
+    await this.seedData();
   }
 }
 

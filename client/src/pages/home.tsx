@@ -9,7 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, CheckCircle2, Info, ChevronRight, Award, Share2, ArrowUpRight, Calendar, Trophy, UploadCloud } from "lucide-react";
-import { Link, useLocation } from "wouter";
+import { Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import React, { useState, useEffect, useRef, useMemo } from "react";
@@ -64,8 +64,6 @@ export default function Home() {
   const [profileSetupOpen, setProfileSetupOpen] = useState(false);
   const [setupFirstName, setSetupFirstName] = useState("");
   const [setupLastName, setSetupLastName] = useState("");
-  const [, setLocation] = useLocation();
-
   const readinessScore = profile?.readinessScore ?? 0;
   const readinessBand =
     readinessScore <= 69 ? "need_attention" : readinessScore <= 89 ? "met" : "excellent";
@@ -348,10 +346,12 @@ export default function Home() {
                           variant="secondary"
                           className="h-8 rounded-lg text-[10px] font-black uppercase px-3 tracking-widest"
                           onClick={() => {
-                            setLocation("/vault?pme=1");
+                            setUploadType("pme_cert");
+                            setUploadTitle("");
+                            setUploadOpen(true);
                           }}
                         >
-                          Edit PME
+                          Upload
                         </Button>
                       ) : item.relatedVaultType === "pft" ? (
                         <Button
@@ -359,10 +359,12 @@ export default function Home() {
                           variant="secondary"
                           className="h-8 rounded-lg text-[10px] font-black uppercase px-3 tracking-widest"
                           onClick={() => {
-                            setLocation("/vault?pft=1");
+                            setUploadType("pft");
+                            setUploadTitle("");
+                            setUploadOpen(true);
                           }}
                         >
-                          Edit PFT
+                          Upload
                         </Button>
                       ) : item.actionType === "upload" || item.actionType === "renew" ? (
                         <Button
@@ -430,11 +432,12 @@ export default function Home() {
                         : ["Authenticated", "Compliant"],
                 };
                 if (uploadType === "pft") extractedFields.score = 285;
+                if (uploadType === "pme_cert") (extractedFields as { passed?: boolean }).passed = true;
                 upload(
                   {
                     profileId: 1,
                     title: uploadTitle.trim(),
-                    type: uploadType as "pft" | "promotion_letter" | "cert" | "medical_clearance" | "orders" | "awards" | "fitness_report" | "other",
+                    type: uploadType as "pft" | "pme_cert" | "promotion_letter" | "cert" | "medical_clearance" | "orders" | "awards" | "fitness_report" | "other",
                     date: format(new Date(), "yyyy-MM-dd"),
                     extractedFields,
                   },
@@ -472,6 +475,7 @@ export default function Home() {
                     <SelectContent className="rounded-xl border-none shadow-xl">
                       <SelectItem value="promotion_letter">Promotion Letter</SelectItem>
                       <SelectItem value="pft">Physical Fitness (PFT)</SelectItem>
+                      <SelectItem value="pme_cert">PME Certification</SelectItem>
                       <SelectItem value="fitness_report">Fitness Report</SelectItem>
                       <SelectItem value="cert">Training Certification</SelectItem>
                       <SelectItem value="medical_clearance">Medical Clearance</SelectItem>

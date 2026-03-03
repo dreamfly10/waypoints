@@ -45,6 +45,7 @@ import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { useQueryClient } from "@tanstack/react-query";
 import { api } from "@shared/routes";
 import { apiFetch } from "@/lib/api";
 import { PaywallModal } from "@/components/paywall-modal";
@@ -134,6 +135,8 @@ export function AppLayout({ children }: { children: ReactNode }) {
   const [milestoneDialogOpen, setMilestoneDialogOpen] = useState(false);
   const [milestoneDialogLevel, setMilestoneDialogLevel] = useState<80 | 90 | null>(null);
   const [paywallOpen, setPaywallOpen] = useState(false);
+  const [resetDemoPending, setResetDemoPending] = useState(false);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     const currentScore = profile?.readinessScore ?? 0;
@@ -906,7 +909,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
                       </div>
                     </div>
 
-                    {/* Danger Zone (stubbed for prototype, no auth) */}
+                    {/* Account & Demo reset */}
                     <div className="bg-white dark:bg-slate-900 rounded-3xl overflow-hidden shadow-sm divide-y divide-slate-50 dark:divide-slate-800">
                       <button className="w-full p-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                         <div className="flex items-center gap-3">
@@ -917,6 +920,54 @@ export function AppLayout({ children }: { children: ReactNode }) {
                         </div>
                         <ChevronRight className="w-4 h-4 text-slate-300" />
                       </button>
+                      <button
+                        type="button"
+                        disabled={resetDemoPending}
+                        onClick={async () => {
+                          setResetDemoPending(true);
+                          try {
+                            const res = await apiFetch(api.demo.reset.path, {
+                              method: api.demo.reset.method,
+                            });
+                            if (!res.ok) throw new Error("Reset failed");
+                            await Promise.all([
+                              queryClient.invalidateQueries({ queryKey: [api.profile.get.path] }),
+                              queryClient.invalidateQueries({ queryKey: [api.vault.list.path] }),
+                              queryClient.invalidateQueries({ queryKey: [api.alerts.list.path] }),
+                              queryClient.invalidateQueries({ queryKey: [api.community.list.path] }),
+                              queryClient.invalidateQueries({ queryKey: [api.readiness.get.path] }),
+                            ]);
+                            toast({
+                              title: "Demo reset",
+                              description: "All data has been reset to the initial state.",
+                            });
+                            setProfileOpen(false);
+                          } catch {
+                            toast({
+                              title: "Reset failed",
+                              description: "Could not reset demo. Try again.",
+                              variant: "destructive",
+                            });
+                          } finally {
+                            setResetDemoPending(false);
+                          }
+                        }}
+                        className="w-full p-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors disabled:opacity-60"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center text-amber-600 dark:text-amber-400">
+                            <ListTodo className="w-4 h-4" />
+                          </div>
+                          <p className="text-sm font-black text-slate-900 dark:text-white">
+                            Reset to initial state
+                          </p>
+                        </div>
+                        {resetDemoPending ? (
+                          <span className="text-xs font-bold text-slate-400">Resetting…</span>
+                        ) : (
+                          <ChevronRight className="w-4 h-4 text-slate-300" />
+                        )}
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -925,13 +976,13 @@ export function AppLayout({ children }: { children: ReactNode }) {
           </div>
         </header>
 
-        {/* Main Content */}
-        <main className="flex-1 min-h-0 overflow-y-auto pb-24 pt-4 px-0 scroll-smooth relative overscroll-none">
+        {/* Main Content — extra bottom padding for tab bar + iOS safe area */}
+        <main className="flex-1 min-h-0 overflow-y-auto pt-4 px-0 scroll-smooth relative overscroll-none pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))]">
           {children}
         </main>
 
-        {/* Bottom Tab Bar */}
-        <nav className="sticky bottom-0 left-0 right-0 w-full h-20 glass z-50 px-4 flex items-center justify-around pb-2 shadow-[0_-8px_20px_rgba(0,0,0,0.05)] border-t border-slate-100 dark:border-slate-800">
+        {/* Bottom Tab Bar — safe area so tabs stay visible on iOS */}
+        <nav className="fixed bottom-0 left-0 right-0 w-full max-w-[430px] mx-auto h-20 z-50 px-4 flex items-center justify-around bg-white/95 dark:bg-slate-950/95 backdrop-blur-md border-t border-slate-100 dark:border-slate-800 shadow-[0_-8px_20px_rgba(0,0,0,0.05)] pb-[max(0.5rem,env(safe-area-inset-bottom,0px))]">
           {navItems.map((item) => {
             const isActive = location === item.url;
             return (
