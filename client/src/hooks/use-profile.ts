@@ -27,8 +27,9 @@ export function useUpdateProfile() {
       if (!res.ok) throw new Error("Failed to update profile");
       return api.profile.update.responses[200].parse(await res.json());
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [api.profile.get.path] });
+    onSuccess: (data) => {
+      // Update cached profile immediately so rank / grade-dependent UI (like Action Items) reacts instantly.
+      queryClient.setQueryData([api.profile.get.path], data);
       queryClient.invalidateQueries({ queryKey: [api.readiness.get.path] });
       queryClient.invalidateQueries({ queryKey: [api.alerts.list.path] });
     },
