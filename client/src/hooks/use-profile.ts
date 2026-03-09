@@ -30,6 +30,7 @@ export function useUpdateProfile() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [api.profile.get.path] });
       queryClient.invalidateQueries({ queryKey: [api.readiness.get.path] });
+      queryClient.invalidateQueries({ queryKey: [api.alerts.list.path] });
     },
   });
 }
